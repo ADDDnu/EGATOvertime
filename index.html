@@ -3,13 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>EGAT Overtime v18.6.2</title>
+  <title>EGAT Overtime v18.7.0</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="assets/css/style.css?v=18.6.2" />
+  <link rel="stylesheet" href="assets/css/style.css?v=18.7.0" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // บังคับให้เข้า login เสมอเมื่อเริ่ม session ใหม่
+    (function(){
+      var SESSION_KEY='ot_session_auth_v1';
+      if(sessionStorage.getItem(SESSION_KEY)!=='ok'){ location.replace('login.html?v=18.7.0'); }
+    })();
+  </script>
 </head>
 <body>
-  <!-- DASHBOARD (หน้าแรก) -->
   <section id="view-dashboard" class="active" aria-label="แดชบอร์ด">
     <h2>แดชบอร์ด</h2>
     <div class="month-nav">
@@ -17,7 +23,6 @@
       <span id="label-month"></span>
       <button id="btn-month-next" aria-label="เดือนถัดไป">▶</button>
     </div>
-
     <div id="quota-card" class="card quota">
       <div class="flex between">
         <div>
@@ -33,14 +38,11 @@
       </div>
       <div class="progress-wrap"><div id="quota-progress" class="progress"></div></div>
     </div>
-
-    <canvas id="dailyChart" height="220" role="img" aria-label="กราฟยอดเงินรายวัน"></canvas>
-    <div id="calendar-summary" aria-live="polite"></div>
-
+    <canvas id="dailyChart" height="220"></canvas>
+    <div id="calendar-summary"></div>
     <h3 class="mt-12">รวมเดือนนี้</h3>
     <div id="sum-month-hours" class="big">0 ชม.</div>
     <div id="sum-month-money" class="big">฿0.00</div>
-
     <div id="quick-list"></div>
   </section>
 
@@ -71,7 +73,7 @@
   <section id="view-report" aria-label="รายงาน">
     <h2>รายงาน</h2>
     <label>เลือกปี <select id="year-select"></select></label>
-    <canvas id="monthlyChart" height="250" role="img" aria-label="กราฟยอดรวมรายเดือน"></canvas>
+    <canvas id="monthlyChart" height="250"></canvas>
     <div class="cards">
       <div class="card"><div class="muted">รวมชั่วโมงทั้งปี</div><div id="sum-year-hours" class="big">0 ชม.</div></div>
       <div class="card"><div class="muted">รวมเงินทั้งปี</div><div id="sum-year-money" class="big">฿0.00</div></div>
@@ -85,7 +87,6 @@
       <input type="checkbox" id="auto-reset-toggle" />
       <span>รีเซ็ตช่องเป็น 0 และวันที่เป็นวันนี้โดยอัตโนมัติ หลังบันทึก</span>
     </label>
-
     <h3>โควตาเริ่มต้นรายเดือน</h3>
     <div class="grid2">
       <label>ค่าเริ่มต้นโควตา (ชั่วโมง/เดือน)
@@ -94,7 +95,6 @@
       <button id="btn-save-default-quota">บันทึกค่าเริ่มต้น</button>
     </div>
     <p class="muted">* ถ้าเดือนใดไม่ได้ตั้งโควตาเฉพาะ จะใช้ค่านี้อัตโนมัติ</p>
-
     <h3>จัดการข้อมูล</h3>
     <div class="flex wrap gap">
       <button id="btn-export">Export</button>
@@ -112,6 +112,6 @@
     <button class="tab" data-view="settings" role="tab">ตั้งค่า</button>
   </footer>
 
-  <script src="assets/js/app.js?v=18.6.2" defer></script>
+  <script src="assets/js/app.js?v=18.7.0" defer></script>
 </body>
 </html>

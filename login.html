@@ -4,27 +4,101 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>เข้าสู่ระบบ EGAT OT</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=18.6.2" />
+  <link rel="stylesheet" href="assets/css/style.css?v=18.7.0" />
 </head>
 <body>
   <div class="login-wrap">
     <div class="login-card">
       <h1>EGAT OT</h1>
-      <p>กรุณาใส่รหัส PIN 6 หลัก</p>
-      <input type="password" id="pin" maxlength="6" autofocus />
-      <button id="loginBtn">เข้าสู่ระบบ</button>
+      <p class="note">เลือกวิธีเข้าสู่ระบบ</p>
+
+      <button id="btn-passkey-login">🔓 ปลดล็อกด้วย Passkey</button>
+      <div class="sep"></div>
+      <p>หรือใช้ PIN 6 หลัก</p>
+      <input type="password" id="pin" maxlength="6" placeholder="••••••" autofocus />
+      <button id="loginBtn">เข้าสู่ระบบ (PIN)</button>
       <div class="hint">รหัสเริ่มต้น: <b>000000</b></div>
+
+      <div class="sep"></div>
+      <button id="btn-passkey-register" class="ghost">➕ ลงทะเบียน Passkey บนอุปกรณ์นี้</button>
+      <p class="note">* ต้องเปิดผ่าน HTTPS/โดเมนจริง (เช่น GitHub Pages) และเบราว์เซอร์ที่รองรับ</p>
     </div>
   </div>
 
 <script>
-const AUTH_KEY='ot_manual_auth_v1';
-const PIN_KEY='ot_pin';
-const defPin=localStorage.getItem(PIN_KEY)||'000000';
-document.getElementById('loginBtn').addEventListener('click',()=>{
-  const pin=document.getElementById('pin').value.trim();
-  if(pin===defPin){ localStorage.setItem(AUTH_KEY,'ok'); location.href='index.html?v=18.6.2'; }
+// --- Config / Keys ---
+var VERSION='18.7.0';
+var SESSION_KEY='ot_session_auth_v1';   // ใช้เฉพาะ session
+var PIN_KEY='ot_pin';                   // ตั้ง PIN ได้ภายหลัง
+var PASSKEY_STORE='ot_webauthn_cred';   // เก็บ id ของ credential (demo only)
+
+function goApp(){ sessionStorage.setItem(SESSION_KEY,'ok'); location.href='index.html?v='+VERSION; }
+
+// --- PIN login ---
+var defPin=localStorage.getItem(PIN_KEY)||'000000';
+document.getElementById('loginBtn').addEventListener('click',function(){
+  var pin=document.getElementById('pin').value.trim();
+  if(pin===defPin){ goApp(); }
   else alert('❌ รหัสไม่ถูกต้อง');
+});
+
+// --- Passkey helpers (demo, no server verification) ---
+function b64uToBytes(b64u){
+  b64u=b64u.replace(/-/g,'+').replace(/_/g,'/'); 
+  var pad=''; while((b64u.length+pad.length)%4) pad+='=';
+  var str=atob(b64u+pad); var arr=new Uint8Array(str.length);
+  for(var i=0;i<str.length;i++) arr[i]=str.charCodeAt(i);
+  return arr;
+}
+function bytesToB64u(buf){
+  var bin=''; var bytes=new Uint8Array(buf);
+  for(var i=0;i<bytes.byteLength;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+// --- Passkey Register ---
+document.getElementById('btn-passkey-register').addEventListener('click', async function(){
+  if(!('credentials' in navigator) || !window.PublicKeyCredential){ alert('เบราว์เซอร์ไม่รองรับ WebAuthn'); return; }
+  try{
+    var challenge = crypto.getRandomValues(new Uint8Array(32));
+    var userId = crypto.getRandomValues(new Uint8Array(16));
+    var pubKey = {
+      challenge: challenge,
+      rp: { name: 'EGAT OT', id: location.hostname },
+      user: { id: userId, name: 'user@'+location.hostname, displayName: 'EGAT User' },
+      pubKeyCredParams: [ { type:'public-key', alg:-7 }, { type:'public-key', alg:-257 } ],
+      timeout: 60000,
+      authenticatorSelection: { userVerification: 'preferred' },
+      attestation: 'none'
+    };
+    var cred = await navigator.credentials.create({ publicKey: pubKey });
+    var rawIdB64u = bytesToB64u(cred.rawId);
+    localStorage.setItem(PASSKEY_STORE, JSON.stringify({ id: rawIdB64u, rpId: location.hostname }));
+    alert('ลงทะเบียน Passkey เรียบร้อย ✔\nตอนนี้สามารถกด “ปลดล็อกด้วย Passkey” ได้');
+  }catch(e){
+    alert('ลงทะเบียนไม่สำเร็จ: '+e);
+  }
+});
+
+// --- Passkey Login ---
+document.getElementById('btn-passkey-login').addEventListener('click', async function(){
+  var saved = null; try{ saved = JSON.parse(localStorage.getItem(PASSKEY_STORE)||'null'); }catch(e){}
+  if(!saved){ alert('ยังไม่ได้ลงทะเบียน Passkey ในอุปกรณ์นี้'); return; }
+  try{
+    var challenge = crypto.getRandomValues(new Uint8Array(32));
+    var getReq = {
+      challenge: challenge,
+      rpId: saved.rpId || location.hostname,
+      allowCredentials: [ { id: b64uToBytes(saved.id), type:'public-key' } ],
+      userVerification: 'preferred',
+      timeout: 60000
+    };
+    var assertion = await navigator.credentials.get({ publicKey: getReq });
+    // *** ไม่มีเซิร์ฟเวอร์จึงไม่ตรวจลายเซ็นในตัวอย่างนี้ ***
+    goApp();
+  }catch(e){
+    alert('ปลดล็อกไม่สำเร็จ: '+e);
+  }
 });
 </script>
 </body>
