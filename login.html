@@ -1,24 +1,30 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>เข้าสู่ระบบ EGAT OT</title>
-<style>
-  body{font-family:"Prompt",sans-serif;background:#0e1535;color:#fff;
-       display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;margin:0}
-  h1{margin:0 0 8px}
-  p{color:#aaa;margin:8px 0;font-size:.9em}
-  input{text-align:center;font-size:1.3em;letter-spacing:5px;padding:8px;width:150px;border:none;border-radius:8px}
-  button{margin-top:10px;padding:10px 16px;border:none;border-radius:8px;background:#4c7aff;color:#fff;cursor:pointer}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>เข้าสู่ระบบ EGAT OT</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=18.6" />
+  <style>
+    .login-wrap{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;height:100vh}
+    .login-card{background:#111a47;border-radius:16px;padding:24px;min-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .login-card h1{margin:0 0 8px}
+    .login-card p{margin:4px 0 12px;color:#c9cbe8}
+    .login-card input{font-size:1.4em;letter-spacing:6px;text-align:center}
+    .hint{color:#8ea2ff;font-size:.9em;margin-top:8px;text-align:center}
+  </style>
 </head>
 <body>
-  <h1>EGAT OT</h1>
-  <p>กรุณาใส่รหัส PIN 6 หลัก</p>
-  <input type="password" id="pin" maxlength="6" autofocus />
-  <button id="loginBtn">เข้าสู่ระบบ</button>
-  <p>รหัสเริ่มต้น: <b>000000</b></p>
+  <div class="login-wrap">
+    <div class="login-card">
+      <h1>EGAT OT</h1>
+      <p>กรุณาใส่รหัส PIN 6 หลัก</p>
+      <input type="password" id="pin" maxlength="6" autofocus />
+      <button id="loginBtn">เข้าสู่ระบบ</button>
+      <div class="hint">รหัสเริ่มต้น: <b>000000</b></div>
+    </div>
+  </div>
 
 <script>
 const AUTH_KEY='ot_manual_auth_v1';
@@ -26,7 +32,7 @@ const PIN_KEY='ot_pin';
 const defPin=localStorage.getItem(PIN_KEY)||'000000';
 document.getElementById('loginBtn').addEventListener('click',()=>{
   const pin=document.getElementById('pin').value.trim();
-  if(pin===defPin){ localStorage.setItem(AUTH_KEY,'ok'); location.href='index.html?v=18.4'; }
+  if(pin===defPin){ localStorage.setItem(AUTH_KEY,'ok'); location.href='index.html?v=18.6'; }
   else alert('❌ รหัสไม่ถูกต้อง');
 });
 </script>

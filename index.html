@@ -1,88 +1,163 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>EGAT Overtime v18.4</title>
-<link rel="stylesheet" href="style.css" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EGAT Overtime v18.6</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="assets/css/style.css?v=18.6" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <!-- DASHBOARD (หน้าแรก) -->
+  <section id="view-dashboard" class="active" aria-label="แดชบอร์ด">
+    <h2>แดชบอร์ด</h2>
+    <div class="month-nav">
+      <button id="btn-month-prev" aria-label="เดือนก่อนหน้า">◀</button>
+      <span id="label-month"></span>
+      <button id="btn-month-next" aria-label="เดือนถัดไป">▶</button>
+    </div>
 
-<!-- DASHBOARD -->
-<section id="view-dashboard" class="active">
-  <h2>แดชบอร์ด</h2>
-  <div class="month-nav">
-    <button id="btn-month-prev">◀</button>
-    <span id="label-month"></span>
-    <button id="btn-month-next">▶</button>
-  </div>
+    <!-- Quota summary / progress -->
+    <div id="quota-card" class="card quota">
+      <div class="flex between">
+        <div>
+          <div class="muted">โควตาชั่วโมง/เดือน</div>
+          <div class="big"><span id="quota-hours">0</span> ชม.</div>
+          <div class="muted small">ค่าเริ่มต้นปัจจุบัน: <span id="quota-default">0</span> ชม.</div>
+        </div>
+        <div class="right">
+          <div class="muted">ใช้ไป</div>
+          <div class="big"><span id="quota-used">0</span> ชม.</div>
+          <div class="muted small">เหลือ <span id="quota-left">0</span> ชม.</div>
+        </div>
+      </div>
+      <div class="progress-wrap" aria-label="ความคืบหน้าโควตาเดือนนี้">
+        <div id="quota-progress" class="progress"></div>
+      </div>
+    </div>
 
-  <canvas id="dailyChart" height="220"></canvas>
+    <canvas id="dailyChart" height="220" role="img" aria-label="กราฟยอดเงินรายวัน"></canvas>
+    <div id="calendar-summary" aria-live="polite"></div>
 
-  <div id="calendar-summary"></div>
+    <h3 class="mt-12">รวมเดือนนี้</h3>
+    <div id="sum-month-hours" class="big">0 ชม.</div>
+    <div id="sum-month-money" class="big">฿0.00</div>
 
-  <h3 style="margin:12px 12px 4px;">รวมเดือนนี้</h3>
-  <div id="sum-month-hours">0 ชม.</div>
-  <div id="sum-month-money">฿0.00</div>
+    <div id="quick-list"></div>
+  </section>
 
-  <div id="quick-list"></div>
-</section>
+  <!-- RECORD -->
+  <section id="view-record" aria-label="บันทึก OT">
+    <h2>บันทึก OT</h2>
 
-<!-- RECORD -->
-<section id="view-record">
-  <h2>บันทึก OT</h2>
-  <input type="date" id="in-date" />
-  <input type="number" id="in-rate" placeholder="อัตราต่อชั่วโมง" readonly />
-  <input type="number" id="h1" placeholder="1x" />
-  <input type="number" id="h15" placeholder="1.5x" />
-  <input type="number" id="h2" placeholder="2x" />
-  <input type="number" id="h3" placeholder="3x" />
-  <button id="btn-save">บันทึก</button>
-  <button id="btn-delete">ลบ</button>
-</section>
+    <label>วันที่
+      <input type="date" id="in-date" />
+    </label>
 
-<!-- REPORT -->
-<section id="view-report">
-  <h2>รายงาน</h2>
-  <select id="year-select"></select>
-  <canvas id="monthlyChart" height="250"></canvas>
-  <div id="sum-year-hours"></div>
-  <div id="sum-year-money"></div>
-</section>
+    <div class="grid2">
+      <label>โควตา/เดือน (ชั่วโมง) — (ปล่อยว่าง = ใช้ค่าเริ่มต้น)
+        <input type="number" id="month-quota" placeholder="เช่น 30" inputmode="decimal" />
+      </label>
+      <label>อัตราต่อชั่วโมง
+        <input type="number" id="in-rate" placeholder="ไปตั้งค่าที่หน้า ตั้งค่า" inputmode="decimal" readonly />
+      </label>
+    </div>
 
-<!-- SETTINGS -->
-<section id="view-settings">
-  <h2>ตั้งค่า</h2>
-  <h3>เงินเดือนและอัตรา</h3>
-  <input id="salary" placeholder="เงินเดือน" />
-  <button id="btn-salary-calc">คำนวณ</button>
-  <div id="salary-result"></div>
+    <div class="grid2">
+      <label>1× <input type="number" id="h1" placeholder="ชั่วโมง" inputmode="decimal" /></label>
+      <label>1.5× <input type="number" id="h15" placeholder="ชั่วโมง" inputmode="decimal" /></label>
+      <label>2× <input type="number" id="h2" placeholder="ชั่วโมง" inputmode="decimal" /></label>
+      <label>3× <input type="number" id="h3" placeholder="ชั่วโมง" inputmode="decimal" /></label>
+    </div>
 
-  <input id="default-rate" placeholder="อัตราต่อชั่วโมง" />
-  <button id="btn-save-rate">บันทึก</button>
+    <div class="flex gap">
+      <button id="btn-save">บันทึก</button>
+      <button id="btn-clear" type="button" class="ghost">เคลียร์ฟิลด์</button>
+      <button id="btn-delete" class="ghost">ลบ</button>
+    </div>
+  </section>
 
-  <h3>รหัสผ่าน (PIN)</h3>
-  <input id="old-pin" placeholder="รหัสเดิม" maxlength="6" />
-  <input id="new-pin" placeholder="รหัสใหม่" maxlength="6" />
-  <button id="btn-change-pin">เปลี่ยนรหัส</button>
-  <button id="btn-reset-pin">รีเซ็ตเป็น 000000</button>
+  <!-- REPORT -->
+  <section id="view-report" aria-label="รายงาน">
+    <h2>รายงาน</h2>
+    <label>เลือกปี
+      <select id="year-select"></select>
+    </label>
+    <canvas id="monthlyChart" height="250" role="img" aria-label="กราฟยอดรวมรายเดือน"></canvas>
+    <div class="cards">
+      <div class="card">
+        <div class="muted">รวมชั่วโมงทั้งปี</div>
+        <div id="sum-year-hours" class="big">0 ชม.</div>
+      </div>
+      <div class="card">
+        <div class="muted">รวมเงินทั้งปี</div>
+        <div id="sum-year-money" class="big">฿0.00</div>
+      </div>
+    </div>
+  </section>
 
-  <h3>จัดการข้อมูล</h3>
-  <button id="btn-export">Export</button>
-  <input type="file" id="import-file" />
-  <button id="btn-import">Import</button>
-  <button id="btn-update-app">ล้าง Cache / โหลดใหม่</button>
-  <button id="btn-logout">ออกจากระบบ</button>
-</section>
+  <!-- SETTINGS -->
+  <section id="view-settings" aria-label="ตั้งค่า">
+    <h2>ตั้งค่า</h2>
 
-<footer>
-  <div class="tab active" data-view="dashboard">แดชบอร์ด</div>
-  <div class="tab" data-view="record">บันทึก</div>
-  <div class="tab" data-view="report">รายงาน</div>
-  <div class="tab" data-view="settings">ตั้งค่า</div>
-</footer>
+    <h3>พฤติกรรมหลังบันทึก</h3>
+    <label class="switch">
+      <input type="checkbox" id="auto-reset-toggle" />
+      <span>รีเซ็ตช่องเป็น 0 และวันที่เป็นวันนี้โดยอัตโนมัติ หลังบันทึก</span>
+    </label>
 
-<script src="js/app.js"></script>
+    <h3>โควตาเริ่มต้นรายเดือน</h3>
+    <div class="grid2">
+      <label>ค่าเริ่มต้นโควตา (ชั่วโมง/เดือน)
+        <input id="default-monthly-quota" type="number" placeholder="เช่น 30" inputmode="decimal" />
+      </label>
+      <button id="btn-save-default-quota">บันทึกค่าเริ่มต้น</button>
+    </div>
+    <p class="muted">* ถ้าเดือนใดไม่ได้ตั้งโควตาเฉพาะ จะใช้ค่านี้อัตโนมัติ</p>
+
+    <h3>เงินเดือนและอัตรา</h3>
+    <div class="grid2">
+      <label>เงินเดือน (บาท)
+        <input id="salary" type="number" placeholder="เช่น 30000" inputmode="numeric" />
+      </label>
+      <button id="btn-salary-calc">คำนวณฐาน/ชม.</button>
+    </div>
+    <div id="salary-result" class="muted"></div>
+
+    <label>อัตราต่อชั่วโมง (ค่าเริ่มต้น)
+      <input id="default-rate" type="number" placeholder="เช่น 180" inputmode="decimal" />
+    </label>
+    <button id="btn-save-rate">บันทึก</button>
+
+    <h3>รหัสผ่าน (PIN)</h3>
+    <div class="grid2">
+      <label>รหัสเดิม <input id="old-pin" placeholder="รหัสเดิม" maxlength="6" /></label>
+      <label>รหัสใหม่ <input id="new-pin" placeholder="รหัสใหม่ 6 หลัก" maxlength="6" /></label>
+    </div>
+    <div class="flex gap">
+      <button id="btn-change-pin">เปลี่ยนรหัส</button>
+      <button id="btn-reset-pin" class="ghost">รีเซ็ตเป็น 000000</button>
+    </div>
+
+    <h3>จัดการข้อมูล</h3>
+    <div class="flex wrap gap">
+      <button id="btn-export">Export</button>
+      <input type="file" id="import-file" />
+      <button id="btn-import">Import</button>
+      <button id="btn-update-app" class="ghost">ล้าง Cache / โหลดใหม่</button>
+      <button id="btn-logout" class="danger">ออกจากระบบ</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="tab active" data-view="dashboard" aria-label="แดชบอร์ด">แดชบอร์ด</div>
+    <div class="tab" data-view="record" aria-label="บันทึก">บันทึก</div>
+    <div class="tab" data-view="report" aria-label="รายงาน">รายงาน</div>
+    <div class="tab" data-view="settings" aria-label="ตั้งค่า">ตั้งค่า</div>
+  </footer>
+
+  <script src="assets/js/app.js?v=18.6" defer></script>
 </body>
 </html>
