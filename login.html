@@ -1,19 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>เข้าสู่ระบบ EGAT OT</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=18.6" />
-  <style>
-    .login-wrap{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;height:100vh}
-    .login-card{background:#111a47;border-radius:16px;padding:24px;min-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-    .login-card h1{margin:0 0 8px}
-    .login-card p{margin:4px 0 12px;color:#c9cbe8}
-    .login-card input{font-size:1.4em;letter-spacing:6px;text-align:center}
-    .hint{color:#8ea2ff;font-size:.9em;margin-top:8px;text-align:center}
-  </style>
+  <link rel="stylesheet" href="assets/css/style.css?v=18.6.2" />
 </head>
 <body>
   <div class="login-wrap">
@@ -32,7 +23,7 @@ const PIN_KEY='ot_pin';
 const defPin=localStorage.getItem(PIN_KEY)||'000000';
 document.getElementById('loginBtn').addEventListener('click',()=>{
   const pin=document.getElementById('pin').value.trim();
-  if(pin===defPin){ localStorage.setItem(AUTH_KEY,'ok'); location.href='index.html?v=18.6'; }
+  if(pin===defPin){ localStorage.setItem(AUTH_KEY,'ok'); location.href='index.html?v=18.6.2'; }
   else alert('❌ รหัสไม่ถูกต้อง');
 });
 </script>

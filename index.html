@@ -1,12 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EGAT Overtime v18.6</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>EGAT Overtime v18.6.2</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="assets/css/style.css?v=18.6" />
+  <link rel="stylesheet" href="assets/css/style.css?v=18.6.2" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -19,7 +18,6 @@
       <button id="btn-month-next" aria-label="เดือนถัดไป">▶</button>
     </div>
 
-    <!-- Quota summary / progress -->
     <div id="quota-card" class="card quota">
       <div class="flex between">
         <div>
@@ -33,9 +31,7 @@
           <div class="muted small">เหลือ <span id="quota-left">0</span> ชม.</div>
         </div>
       </div>
-      <div class="progress-wrap" aria-label="ความคืบหน้าโควตาเดือนนี้">
-        <div id="quota-progress" class="progress"></div>
-      </div>
+      <div class="progress-wrap"><div id="quota-progress" class="progress"></div></div>
     </div>
 
     <canvas id="dailyChart" height="220" role="img" aria-label="กราฟยอดเงินรายวัน"></canvas>
@@ -48,30 +44,23 @@
     <div id="quick-list"></div>
   </section>
 
-  <!-- RECORD -->
   <section id="view-record" aria-label="บันทึก OT">
     <h2>บันทึก OT</h2>
-
-    <label>วันที่
-      <input type="date" id="in-date" />
-    </label>
-
+    <label>วันที่ <input type="date" id="in-date" /></label>
     <div class="grid2">
-      <label>โควตา/เดือน (ชั่วโมง) — (ปล่อยว่าง = ใช้ค่าเริ่มต้น)
+      <label>โควตา/เดือน (ชั่วโมง) — (ว่าง=ใช้ค่าเริ่มต้น)
         <input type="number" id="month-quota" placeholder="เช่น 30" inputmode="decimal" />
       </label>
       <label>อัตราต่อชั่วโมง
         <input type="number" id="in-rate" placeholder="ไปตั้งค่าที่หน้า ตั้งค่า" inputmode="decimal" readonly />
       </label>
     </div>
-
     <div class="grid2">
       <label>1× <input type="number" id="h1" placeholder="ชั่วโมง" inputmode="decimal" /></label>
       <label>1.5× <input type="number" id="h15" placeholder="ชั่วโมง" inputmode="decimal" /></label>
       <label>2× <input type="number" id="h2" placeholder="ชั่วโมง" inputmode="decimal" /></label>
       <label>3× <input type="number" id="h3" placeholder="ชั่วโมง" inputmode="decimal" /></label>
     </div>
-
     <div class="flex gap">
       <button id="btn-save">บันทึก</button>
       <button id="btn-clear" type="button" class="ghost">เคลียร์ฟิลด์</button>
@@ -79,29 +68,18 @@
     </div>
   </section>
 
-  <!-- REPORT -->
   <section id="view-report" aria-label="รายงาน">
     <h2>รายงาน</h2>
-    <label>เลือกปี
-      <select id="year-select"></select>
-    </label>
+    <label>เลือกปี <select id="year-select"></select></label>
     <canvas id="monthlyChart" height="250" role="img" aria-label="กราฟยอดรวมรายเดือน"></canvas>
     <div class="cards">
-      <div class="card">
-        <div class="muted">รวมชั่วโมงทั้งปี</div>
-        <div id="sum-year-hours" class="big">0 ชม.</div>
-      </div>
-      <div class="card">
-        <div class="muted">รวมเงินทั้งปี</div>
-        <div id="sum-year-money" class="big">฿0.00</div>
-      </div>
+      <div class="card"><div class="muted">รวมชั่วโมงทั้งปี</div><div id="sum-year-hours" class="big">0 ชม.</div></div>
+      <div class="card"><div class="muted">รวมเงินทั้งปี</div><div id="sum-year-money" class="big">฿0.00</div></div>
     </div>
   </section>
 
-  <!-- SETTINGS -->
   <section id="view-settings" aria-label="ตั้งค่า">
     <h2>ตั้งค่า</h2>
-
     <h3>พฤติกรรมหลังบันทึก</h3>
     <label class="switch">
       <input type="checkbox" id="auto-reset-toggle" />
@@ -117,30 +95,6 @@
     </div>
     <p class="muted">* ถ้าเดือนใดไม่ได้ตั้งโควตาเฉพาะ จะใช้ค่านี้อัตโนมัติ</p>
 
-    <h3>เงินเดือนและอัตรา</h3>
-    <div class="grid2">
-      <label>เงินเดือน (บาท)
-        <input id="salary" type="number" placeholder="เช่น 30000" inputmode="numeric" />
-      </label>
-      <button id="btn-salary-calc">คำนวณฐาน/ชม.</button>
-    </div>
-    <div id="salary-result" class="muted"></div>
-
-    <label>อัตราต่อชั่วโมง (ค่าเริ่มต้น)
-      <input id="default-rate" type="number" placeholder="เช่น 180" inputmode="decimal" />
-    </label>
-    <button id="btn-save-rate">บันทึก</button>
-
-    <h3>รหัสผ่าน (PIN)</h3>
-    <div class="grid2">
-      <label>รหัสเดิม <input id="old-pin" placeholder="รหัสเดิม" maxlength="6" /></label>
-      <label>รหัสใหม่ <input id="new-pin" placeholder="รหัสใหม่ 6 หลัก" maxlength="6" /></label>
-    </div>
-    <div class="flex gap">
-      <button id="btn-change-pin">เปลี่ยนรหัส</button>
-      <button id="btn-reset-pin" class="ghost">รีเซ็ตเป็น 000000</button>
-    </div>
-
     <h3>จัดการข้อมูล</h3>
     <div class="flex wrap gap">
       <button id="btn-export">Export</button>
@@ -151,13 +105,13 @@
     </div>
   </section>
 
-  <footer>
-    <div class="tab active" data-view="dashboard" aria-label="แดชบอร์ด">แดชบอร์ด</div>
-    <div class="tab" data-view="record" aria-label="บันทึก">บันทึก</div>
-    <div class="tab" data-view="report" aria-label="รายงาน">รายงาน</div>
-    <div class="tab" data-view="settings" aria-label="ตั้งค่า">ตั้งค่า</div>
+  <footer id="footer-tabs" role="tablist" aria-label="เมนู">
+    <button class="tab active" data-view="dashboard" role="tab" aria-selected="true">แดชบอร์ด</button>
+    <button class="tab" data-view="record" role="tab">บันทึก</button>
+    <button class="tab" data-view="report" role="tab">รายงาน</button>
+    <button class="tab" data-view="settings" role="tab">ตั้งค่า</button>
   </footer>
 
-  <script src="assets/js/app.js?v=18.6" defer></script>
+  <script src="assets/js/app.js?v=18.6.2" defer></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 
-// EGAT OT v18.6 — Auto-reset toggle, Clear button, Default monthly quota
-const VERSION='18.6';
+// EGAT OT v18.6.2 — navbar fix + no-zoom
+const VERSION='18.6.2';
 const AUTH_KEY='ot_manual_auth_v1';
 const DB_KEY='ot_manual_v1';
 const PIN_KEY='ot_pin';
@@ -9,22 +9,28 @@ if(!location.pathname.endsWith('/login.html') && localStorage.getItem(AUTH_KEY)!
   location.href='login.html?v='+VERSION;
 }
 
-const db={ // persisted state
+const db={
   load(){
-    try{const d=JSON.parse(localStorage.getItem(DB_KEY))||{entries:{},defRate:0,quotas:{},settings:{}};
-      d.entries=d.entries||{}; d.quotas=d.quotas||{}; d.settings=d.settings||{};
-      if(typeof d.settings.autoReset==='undefined') d.settings.autoReset=true;
-      if(typeof d.settings.defaultMonthlyQuota==='undefined') d.settings.defaultMonthlyQuota=30; // 30h default
-      d.defRate=Number(d.defRate||0); return d;
-    }catch{ return {entries:{},defRate:0,quotas:{},settings:{autoReset:true,defaultMonthlyQuota:30}}; }
+    try{
+      const d = JSON.parse(localStorage.getItem(DB_KEY)) || {entries:{},defRate:0,quotas:{},settings:{}};
+      d.entries = d.entries || {};
+      d.quotas = d.quotas || {};
+      d.settings = d.settings || {autoReset:true, defaultMonthlyQuota:30};
+      d.defRate = Number(d.defRate||0);
+      if(typeof d.settings.autoReset==='undefined') d.settings.autoReset = true;
+      if(typeof d.settings.defaultMonthlyQuota==='undefined') d.settings.defaultMonthlyQuota = 30;
+      return d;
+    } catch {
+      return {entries:{},defRate:0,quotas:{},settings:{autoReset:true, defaultMonthlyQuota:30}};
+    }
   },
   save(d){ localStorage.setItem(DB_KEY, JSON.stringify(d)); },
-  upsert(date,entry){ const d=db.load(); d.entries[date]=entry; db.save(d); },
-  remove(date){ const d=db.load(); delete d.entries[date]; db.save(d); },
-  setQuota(monthKey,hours){ const d=db.load(); d.quotas[monthKey]=Number(hours)||0; db.save(d); },
-  getQuota(monthKey){ const d=db.load(); const q=d.quotas?.[monthKey]; return (q && q>0) ? q : Number(d.settings?.defaultMonthlyQuota||0); },
-  getSettings(){ return db.load().settings; },
-  setSettings(s){ const d=db.load(); d.settings={...d.settings, ...s}; db.save(d); }
+  upsert(date,entry){ const d=this.load(); d.entries[date]=entry; this.save(d); },
+  remove(date){ const d=this.load(); delete d.entries[date]; this.save(d); },
+  setQuota(monthKey,hours){ const d=this.load(); d.quotas[monthKey]=Number(hours)||0; this.save(d); },
+  getQuota(monthKey){ const d=this.load(); const q=d.quotas[monthKey]; return (q && q>0) ? q : Number(d.settings.defaultMonthlyQuota||0); },
+  getSettings(){ return this.load().settings; },
+  setSettings(s){ const d=this.load(); d.settings = {...d.settings, ...s}; this.save(d); }
 };
 
 const $=s=>document.querySelector(s);
@@ -47,13 +53,11 @@ function renderDashboard(){
     const money=h1*rate+h15*rate*1.5+h2*rate*2+h3*rate*3;
     return {date,h1,h15,h2,h3,hours,money};
   });
-
   const sumH=rows.reduce((s,r)=>s+r.hours,0);
   const sumM=rows.reduce((s,r)=>s+r.money,0);
   const quota=db.getQuota(key);
   const left=Math.max(0,quota-sumH);
   const pct=quota>0?Math.min(100,Math.round(sumH/quota*100)):0;
-
   $('#quota-hours').textContent=quota.toFixed(1);
   $('#quota-default').textContent=(db.getSettings().defaultMonthlyQuota||0).toFixed(1);
   $('#quota-used').textContent=sumH.toFixed(1);
@@ -62,7 +66,6 @@ function renderDashboard(){
   $('#label-month').textContent=fmtMonth(state.year,state.month);
   $('#sum-month-hours').textContent=sumH.toFixed(2)+' ชม.';
   $('#sum-month-money').textContent=thb(sumM);
-
   const list=$('#quick-list'); list.innerHTML='';
   rows.forEach(r=>{
     const el=document.createElement('div'); el.className='item';
@@ -70,7 +73,6 @@ function renderDashboard(){
     <div><span class="pill">${r.hours.toFixed(2)} ชม.</span><span class="pill money">${thb(r.money)}</span></div>`;
     list.appendChild(el);
   });
-
   renderDailyChart(state.year,state.month);
   renderCalendarSummary(state.year,state.month);
 }
@@ -115,6 +117,102 @@ function renderCalendarSummary(year,month){
   });
 }
 
+// Prevent pinch/double-tap zoom on mobile
+document.addEventListener('gesturestart', e => e.preventDefault(), {passive:false});
+
+// ---- Settings ----
+document.getElementById('btn-save-default-quota')?.addEventListener('click',()=>{
+  const v=parseFloat(document.getElementById('default-monthly-quota').value||'0')||0;
+  db.setSettings({defaultMonthlyQuota: v});
+  alert('บันทึกโควตาเริ่มต้นรายเดือนเรียบร้อย');
+  renderDashboard();
+});
+document.getElementById('auto-reset-toggle')?.addEventListener('change',(e)=>{
+  db.setSettings({autoReset: e.target.checked});
+});
+
+function refreshQuotaField(){
+  const date=document.getElementById('in-date')?.value || ymd(new Date());
+  const [y,m]=date.split('-').map(Number);
+  const monthKey=monthKeyOf(y,m);
+  const d=db.load();
+  const explicit=d.quotas[monthKey];
+  const el=document.getElementById('month-quota');
+  if(el) el.value = (explicit && explicit>0) ? explicit : '';
+}
+document.getElementById('in-date')?.addEventListener('change', refreshQuotaField);
+document.getElementById('month-quota')?.addEventListener('change',()=>{
+  const date=document.getElementById('in-date').value || ymd(new Date());
+  const [y,m]=date.split('-').map(Number);
+  const v=parseFloat(document.getElementById('month-quota').value||'0');
+  const key=monthKeyOf(y,m);
+  if(v>0) db.setQuota(key, v);
+  else{
+    const d=db.load(); delete d.quotas[key]; db.save(d);
+  }
+  renderDashboard();
+});
+
+function clearInputsToToday(){
+  ['h1','h15','h2','h3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=0; });
+  const d=document.getElementById('in-date'); if(d) d.value=ymd(new Date());
+  refreshQuotaField();
+}
+document.getElementById('btn-clear')?.addEventListener('click', clearInputsToToday);
+
+document.getElementById('btn-save')?.addEventListener('click',()=>{
+  const date=document.getElementById('in-date').value||ymd(new Date());
+  const rate=parseFloat(document.getElementById('in-rate').value||'0')||0;
+  const h1=+document.getElementById('h1').value||0;
+  const h15=+document.getElementById('h15').value||0;
+  const h2=+document.getElementById('h2').value||0;
+  const h3=+document.getElementById('h3').value||0;
+  if(rate<=0){ alert('⚠️ กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า'); return; }
+
+  const [y,m]=date.split('-').map(Number);
+  const key=monthKeyOf(y,m); const quota=db.getQuota(key);
+  const data=db.load();
+  let monthHours=0; for(const [d,v] of Object.entries(data.entries)){ if(d.startsWith(key)) monthHours+=(+v.h1||0)+(+v.h15||0)+(+v.h2||0)+(+v.h3||0); }
+  const add=h1+h15+h2+h3; const projected=monthHours+add;
+  if(quota>0 && projected>quota){
+    if(!confirm(`ชั่วโมงรวมเดือนนี้จะเป็น ${projected.toFixed(2)} ชม. เกินโควตา ${quota.toFixed(1)} ชม. ต้องการบันทึกต่อหรือไม่?`)) return;
+  }
+
+  if(!confirm(`ยืนยันบันทึก OT วันที่ ${date}\n1×:${h1} 1.5×:${h15} 2×:${h2} 3×:${h3}`)) return;
+  db.upsert(date,{rate,h1,h15,h2,h3});
+  alert('✅ บันทึกสำเร็จ!');
+
+  if(db.getSettings().autoReset) clearInputsToToday();
+  renderDashboard();
+});
+
+document.getElementById('btn-delete')?.addEventListener('click',()=>{
+  const date=document.getElementById('in-date').value; if(!date) return alert('เลือกวันที่ก่อนลบ');
+  if(confirm('ต้องการลบข้อมูลวันที่ '+date+' ?')){ db.remove(date); renderDashboard(); }
+});
+
+// ---- Navigation (robust delegation) ----
+document.getElementById('footer-tabs')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+
+  document.querySelectorAll('#footer-tabs .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('view-' + btn.dataset.view);
+  if (target) target.classList.add('active');
+
+  if (btn.dataset.view === 'dashboard') renderDashboard();
+  if (btn.dataset.view === 'report') {
+    const y = new Date().getFullYear();
+    renderMonthlyChart(y);
+    renderYearSummary(y);
+  }
+  if (btn.dataset.view === 'record') refreshQuotaField();
+});
+
+// ---- Year summary and monthly chart ----
 function renderYearSummary(y){
   const data=db.load();
   let hours=0,money=0;
@@ -144,154 +242,18 @@ function renderMonthlyChart(y){
   monthlyChart=new Chart(c.getContext('2d'),{type:'bar',data:{labels:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],datasets:[{data:monthly,backgroundColor:'rgba(255,206,86,.7)',borderColor:'rgba(255,255,255,0.85)',borderWidth:1}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'฿'+c.formattedValue}}},scales:{x:{ticks:{color:'#fff'},grid:{color:'#444'}},y:{ticks:{color:'#fff'},grid:{color:'#333'}}}});
 }
 
-// ---- Settings ----
-document.getElementById('btn-salary-calc')?.addEventListener('click',()=>{
-  const s=parseFloat(document.getElementById('salary').value||'0'); if(!s) return alert('กรุณากรอกเงินเดือน');
-  const rate=(s/210).toFixed(2);
-  document.getElementById('salary-result').textContent='อัตราต่อชั่วโมง = '+rate+' บาท/ชม.';
-  document.getElementById('default-rate').value=rate;
-});
-document.getElementById('btn-save-rate')?.addEventListener('click',()=>{
-  const r=parseFloat(document.getElementById('default-rate').value||'0');
-  const d=db.load(); d.defRate=r; db.save(d);
-  alert('บันทึกค่าเริ่มต้นเรียบร้อย');
-});
-
-function initSettingsUI(){
-  const s=db.getSettings();
-  const t=document.getElementById('auto-reset-toggle');
-  const q=document.getElementById('default-monthly-quota');
-  if(t) t.checked = !!s.autoReset;
-  if(q) q.value = (s.defaultMonthlyQuota||0);
-}
-document.getElementById('auto-reset-toggle')?.addEventListener('change',(e)=>{
-  db.setSettings({autoReset: e.target.checked});
-});
-document.getElementById('btn-save-default-quota')?.addEventListener('click',()=>{
-  const v=parseFloat(document.getElementById('default-monthly-quota').value||'0')||0;
-  db.setSettings({defaultMonthlyQuota: v});
-  alert('บันทึกโควตาเริ่มต้นรายเดือนเรียบร้อย');
-  renderDashboard();
-});
-
-document.getElementById('btn-change-pin')?.addEventListener('click',()=>{
-  const cur=localStorage.getItem(PIN_KEY)||'000000';
-  const oldp=document.getElementById('old-pin').value.trim(), newp=document.getElementById('new-pin').value.trim();
-  if(oldp!==cur) return alert('PIN ปัจจุบันไม่ถูกต้อง');
-  if(newp.length!==6) return alert('PIN ใหม่ต้องมี 6 หลัก');
-  localStorage.setItem(PIN_KEY,newp); alert('เปลี่ยนรหัสเรียบร้อย');
-});
-document.getElementById('btn-reset-pin')?.addEventListener('click',()=>{
-  if(confirm('รีเซ็ต PIN เป็น 000000 ?')){ localStorage.setItem(PIN_KEY,'000000'); alert('รีเซ็ตเรียบร้อย'); }
-});
-document.getElementById('btn-logout')?.addEventListener('click',()=>{
-  if(confirm('ออกจากระบบ?')){ localStorage.removeItem(AUTH_KEY); location.href='login.html?v='+VERSION; }
-});
-document.getElementById('btn-export')?.addEventListener('click',()=>{
-  const blob=new Blob([JSON.stringify(db.load(),null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='EGAT_OT_Backup.json'; a.click();
-});
-document.getElementById('btn-import')?.addEventListener('click',()=>{
-  const f=document.getElementById('import-file').files[0]; if(!f) return alert('กรุณาเลือกไฟล์');
-  const r=new FileReader(); r.onload=e=>{ try{ db.save(JSON.parse(e.target.result)); alert('นำเข้าข้อมูลเรียบร้อย'); renderDashboard(); }catch{ alert('ไฟล์ไม่ถูกต้อง'); } };
-  r.readAsText(f);
-});
-document.getElementById('btn-update-app')?.addEventListener('click',()=>{
-  if(confirm('ล้าง Cache และโหลดใหม่?')){ caches?.keys().then(keys=>keys.forEach(k=>caches.delete(k))).finally(()=>location.reload(true)); }
-});
-
-// ---- Record + Quota ----
-function refreshQuotaField(){
-  const date=document.getElementById('in-date').value || ymd(new Date());
-  const [y,m]=date.split('-').map(Number);
-  const monthKey=monthKeyOf(y,m);
-  const d=db.load();
-  const explicit=d.quotas?.[monthKey];
-  document.getElementById('month-quota').value = (explicit && explicit>0) ? explicit : '';
-}
-document.getElementById('in-date')?.addEventListener('change', refreshQuotaField);
-document.getElementById('month-quota')?.addEventListener('change',()=>{
-  const date=document.getElementById('in-date').value || ymd(new Date());
-  const [y,m]=date.split('-').map(Number);
-  const v=parseFloat(document.getElementById('month-quota').value||'0');
-  const key=monthKeyOf(y,m);
-  if(v>0) db.setQuota(key, v);
-  else{
-    const d=db.load(); delete d.quotas[key]; db.save(d);
-  }
-  renderDashboard();
-});
-
-function clearInputsToToday(){
-  document.getElementById('h1').value=0;
-  document.getElementById('h15').value=0;
-  document.getElementById('h2').value=0;
-  document.getElementById('h3').value=0;
-  document.getElementById('in-date').value = ymd(new Date());
-  refreshQuotaField();
-}
-document.getElementById('btn-clear')?.addEventListener('click', clearInputsToToday);
-
-document.getElementById('btn-save')?.addEventListener('click',()=>{
-  const date=document.getElementById('in-date').value||ymd(new Date());
-  const rate=parseFloat(document.getElementById('in-rate').value||'0')||0;
-  const h1=+document.getElementById('h1').value||0;
-  const h15=+document.getElementById('h15').value||0;
-  const h2=+document.getElementById('h2').value||0;
-  const h3=+document.getElementById('h3').value||0;
-  if(rate<=0){ alert('⚠️ กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า'); return; }
-
-  const [y,m]=date.split('-').map(Number);
-  const key=monthKeyOf(y,m); const quota=db.getQuota(key);
-  const data=db.load();
-  let monthHours=0; for(const [d,v] of Object.entries(data.entries)){ if(d.startsWith(key)) monthHours+=(+v.h1||0)+(+v.h15||0)+(+v.h2||0)+(+v.h3||0); }
-  const add=h1+h15+h2+h3; const projected=monthHours+add;
-  if(quota>0 && projected>quota){
-    if(!confirm(`ชั่วโมงรวมเดือนนี้จะเป็น ${projected.toFixed(2)} ชม. เกินโควตา ${quota.toFixed(1)} ชม. ต้องการบันทึกต่อหรือไม่?`)) return;
-  }
-
-  if(!confirm(`ยืนยันบันทึก OT วันที่ ${date}\n1×:${h1} 1.5×:${h15} 2×:${h2} 3×:${h3}`)) return;
-  db.upsert(date,{rate,h1,h15,h2,h3});
-  alert('✅ บันทึกสำเร็จ!');
-
-  const auto = !!db.getSettings().autoReset;
-  if(auto) clearInputsToToday();
-  renderDashboard();
-});
-
-document.getElementById('btn-delete')?.addEventListener('click',()=>{
-  const date=document.getElementById('in-date').value; if(!date) return alert('เลือกวันที่ก่อนลบ');
-  if(confirm('ต้องการลบข้อมูลวันที่ '+date+' ?')){ db.remove(date); renderDashboard(); }
-});
-
-// ---- Navigation ----
-document.getElementById('btn-month-prev')?.addEventListener('click',()=>{ state.month--; if(state.month<1){ state.month=12; state.year--; } renderDashboard(); });
-document.getElementById('btn-month-next')?.addEventListener('click',()=>{ state.month++; if(state.month>12){ state.month=1; state.year++; } renderDashboard(); });
-
 // ---- Init ----
 function initUI(){
   const dInput=document.getElementById('in-date'); if(dInput && !dInput.value) dInput.value=ymd(new Date());
   const data=db.load(); const rateInput=document.getElementById('in-rate');
   if(rateInput){ rateInput.readOnly=true; if(data.defRate>0) rateInput.value=Number(data.defRate).toFixed(2); else rateInput.placeholder='กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า'; }
   refreshQuotaField();
-  initSettingsUI();
-
-  const tabs=document.querySelectorAll('.tab'); const secs=document.querySelectorAll('section');
-  tabs.forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      tabs.forEach(t=>t.classList.remove('active')); tab.classList.add('active');
-      secs.forEach(s=>s.classList.remove('active'));
-      const target=document.querySelector('#view-'+tab.dataset.view); if(target) target.classList.add('active');
-      if(tab.dataset.view==='dashboard') renderDashboard();
-      if(tab.dataset.view==='report'){ const y=new Date().getFullYear(); renderYearSummary(y); renderMonthlyChart(y); }
-      if(tab.dataset.view==='record') refreshQuotaField();
-    });
-  });
-
-  document.querySelector('.tab[data-view="dashboard"]')?.classList.add('active');
-  document.querySelector('#view-dashboard')?.classList.add('active');
+  const s=db.getSettings();
+  const t=document.getElementById('auto-reset-toggle');
+  const q=document.getElementById('default-monthly-quota');
+  if(t) t.checked=!!s.autoReset;
+  if(q) q.value=s.defaultMonthlyQuota||30;
   renderDashboard();
-
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?v='+VERSION).catch(()=>{});
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initUI); else initUI();

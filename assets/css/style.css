@@ -10,8 +10,9 @@ label{display:block;font-size:.95em;color:var(--muted);margin-top:6px}
 .big{font-size:1.25em;font-weight:600;margin:4px 0 10px}
 .flex{display:flex;align-items:center}.wrap{flex-wrap:wrap}.gap{gap:8px}.between{justify-content:space-between}.right{text-align:right}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.small{font-size:.85em}
-footer{position:fixed;bottom:0;left:0;right:0;background:#1a2145;display:flex;justify-content:space-around;align-items:center;padding:8px;z-index:999;border-top:1px solid rgba(255,255,255,.06)}
-.tab{color:#fff;padding:10px 12px;cursor:pointer;border-radius:10px}.tab.active{background:var(--brand-2)}
+footer{position:fixed;bottom:0;left:0;right:0;background:#1a2145;display:flex;justify-content:space-around;align-items:center;padding:8px;border-top:1px solid rgba(255,255,255,.06);z-index:99999;pointer-events:auto}
+footer .tab{color:#fff;padding:10px 12px;cursor:pointer;border-radius:10px;background:transparent;border:none}
+footer .tab.active{background:var(--brand-2)}
 .item{display:flex;justify-content:space-between;gap:10px;background:var(--panel-2);border-radius:12px;padding:10px;margin:6px 0}
 .muted{color:var(--muted);font-size:.9em}.pill{padding:4px 8px;border-radius:8px;background:var(--brand-2);margin-left:6px}.pill.money{background:var(--good)}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{background:var(--panel-2);border-radius:12px;padding:12px}
@@ -21,4 +22,7 @@ footer{position:fixed;bottom:0;left:0;right:0;background:#1a2145;display:flex;ju
 .day-cell{position:relative;width:calc(14.28% - 2px);aspect-ratio:1/1;background:#1c2658;border-radius:10px;margin:1px;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:background .2s;font-weight:600;text-align:center}
 .day-cell.low{background:#345d9c}.day-cell.mid{background:#5588cc}.day-cell.high{background:#85c46c}.day-cell.off{background:transparent}
 .day-hour{font-size:1.2em}.day-number{position:absolute;bottom:4px;left:6px;font-size:.75em;opacity:.85}
-.switch input{transform:translateY(2px);margin-right:8px}
+.login-wrap{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;height:100vh}
+.login-card{background:#111a47;border-radius:16px;padding:24px;min-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.login-card input{font-size:16px;text-align:center;letter-spacing:6px}
+.hint{color:#8ea2ff;font-size:.9em;margin-top:8px;text-align:center}
