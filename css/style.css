@@ -1,0 +1,32 @@
+body {
+  font-family: 'Mitr', sans-serif;
+  background: #0a0f2c;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #111;
+  display: flex;
+}
+.tab {
+  flex: 1;
+  padding: 12px;
+  cursor: pointer;
+  border-top: 3px solid transparent;
+}
+.tab.active {
+  border-color: #4af;
+}
+section {
+  display: none;
+  padding: 20px;
+}
+section.active {
+  display: block;
+}
