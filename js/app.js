@@ -1,627 +1,321 @@
-// ===== ตรวจสอบสิทธิ์ Login =====
-const AUTH_KEY = 'ot_manual_auth_v1';
-if (localStorage.getItem(AUTH_KEY) !== 'ok')
-  location.href = 'login.html?v=18.2';
+// EGAT OT — app.js (safe syntax)
+var DB_KEY = 'ot_manual_v1';
 
-// ===== Database =====
-const KEY = 'ot_manual_v1';
-const db = {// ===== Auth =====
-const AUTH_KEY='ot_manual_auth_v1';
-if(localStorage.getItem(AUTH_KEY)!=='ok') location.href='login.html?v=18.4';
+function dbLoad() {
+  try {
+    var d = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+    d.entries  = d.entries  || {};
+    d.defRate  = Number(d.defRate || 0);
+    d.quotas   = d.quotas   || {};
+    d.settings = d.settings || {};
+    if (typeof d.settings.autoReset === 'undefined') d.settings.autoReset = true;
+    if (typeof d.settings.defaultMonthlyQuota === 'undefined') d.settings.defaultMonthlyQuota = 30;
+    return d;
+  } catch(e) {
+    return { entries:{}, defRate:0, quotas:{}, settings:{ autoReset:true, defaultMonthlyQuota:30 } };
+  }
+}
+function dbSave(d){ localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+function dbUpsert(date,entry){ var d=dbLoad(); d.entries[date]=entry; dbSave(d); }
+function dbRemove(date){ var d=dbLoad(); delete d.entries[date]; dbSave(d); }
+function dbSetQuota(k,h){ var d=dbLoad(); d.quotas[k]=Number(h)||0; dbSave(d); }
+function dbGetQuota(k){ var d=dbLoad(); var q=d.quotas[k]; return (q && q>0) ? q : Number(d.settings.defaultMonthlyQuota||0); }
+function dbGetSettings(){ return dbLoad().settings; }
+function dbSetSettings(s){ var d=dbLoad(); for (var k in s){ d.settings[k]=s[k]; } dbSave(d); }
 
-// ===== DB (localStorage) =====
-const KEY='ot_manual_v1';
-const db={
-  load(){ try{ return JSON.parse(localStorage.getItem(KEY))||{entries:{},defRate:0}; }catch{ return {entries:{},defRate:0}; } },
-  save(d){ localStorage.setItem(KEY,JSON.stringify(d)); },
-  upsert(date,entry){ const d=db.load(); d.entries[date]=entry; db.save(d); },
-  remove(date){ const d=db.load(); delete d.entries[date]; db.save(d); }
-};
+function $(s){ return document.querySelector(s); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function ymd(d){ return [d.getFullYear(), pad(d.getMonth()+1), pad(d.getDate())].join('-'); }
+function fmtMonth(y,m){ return new Date(y,m-1,1).toLocaleDateString('th-TH',{year:'numeric',month:'long'}); }
+function monthKeyOf(y,m){ return y+'-'+pad(m); }
+function thb(n){ return '฿'+Number(n||0).toFixed(2); }
 
-// ===== Utils =====
-const $=s=>document.querySelector(s);
-const pad=n=>String(n).padStart(2,'0');
-const ymd=d=>[d.getFullYear(),pad(d.getMonth()+1),pad(d.getDate())].join('-');
-const thb=n=>'฿'+(n||0).toFixed(2);
-const fmtMonth=(y,m)=>new Date(y,m-1,1).toLocaleDateString('th-TH',{year:'numeric',month:'long'});
+var state = { year:(new Date()).getFullYear(), month:(new Date()).getMonth()+1 };
+var dailyChart = null, monthlyChart = null;
 
-// ===== State =====
-let state={ year:new Date().getFullYear(), month:new Date().getMonth()+1 };
-let dailyChart, monthlyChart;
-
-// ===== Dashboard =====
 function renderDashboard(){
-  const {entries}=db.load();
-  const monthKey=`${state.year}-${pad(state.month)}`;
-  const rows=Object.entries(entries)
-    .filter(([d])=>d.startsWith(monthKey))
-    .map(([date,v])=>{
-      const rate=+v.rate||+db.load().defRate||0;
-      const h1=+v.h1||0, h15=+v.h15||0, h2=+v.h2||0, h3=+v.h3||0;
-      const hours=h1+h15+h2+h3;
-      const money=h1*rate+h15*rate*1.5+h2*rate*2+h3*rate*3;
-      return {date,h1,h15,h2,h3,hours,money};
-    });
+  var data=dbLoad();
+  var key=monthKeyOf(state.year,state.month);
+  var rows=[], k, i;
 
-  const sumH=rows.reduce((s,r)=>s+r.hours,0);
-  const sumM=rows.reduce((s,r)=>s+r.money,0);
+  for (k in data.entries){
+    if (k.indexOf(key)===0){
+      var v=data.entries[k];
+      var rate=+v.rate||+data.defRate||0;
+      var h1=+v.h1||0, h15=+v.h15||0, h2=+v.h2||0, h3=+v.h3||0;
+      rows.push({
+        date:k, h1:h1, h15:h15, h2:h2, h3:h3,
+        hours:h1+h15+h2+h3,
+        money:h1*rate + h15*rate*1.5 + h2*rate*2 + h3*rate*3
+      });
+    }
+  }
 
-  $('#label-month').textContent=fmtMonth(state.year,state.month);
-  $('#sum-month-hours').textContent=sumH.toFixed(2)+' ชม.';
-  $('#sum-month-money').textContent=thb(sumM);
+  var sumH=0, sumM=0;
+  for (i=0;i<rows.length;i++){ sumH+=rows[i].hours; sumM+=rows[i].money; }
 
-  const list=$('#quick-list'); list.innerHTML='';
-  rows.forEach(r=>{
-    const el=document.createElement('div'); el.className='item';
-    el.innerHTML=`<div><b>${r.date}</b>
-      <div class="muted">1×:${r.h1} 1.5×:${r.h15} 2×:${r.h2} 3×:${r.h3}</div></div>
-      <div><span class="pill">${r.hours.toFixed(2)} ชม.</span><span class="pill money">${thb(r.money)}</span></div>`;
+  var quota=dbGetQuota(key);
+  var left=Math.max(0, quota - sumH);
+  var pct = quota>0 ? Math.min(100, Math.round(sumH/quota*100)) : 0;
+
+  $('#quota-hours').textContent   = quota.toFixed(1);
+  $('#quota-default').textContent = (dbGetSettings().defaultMonthlyQuota||0).toFixed(1);
+  $('#quota-used').textContent    = sumH.toFixed(1);
+  $('#quota-left').textContent    = left.toFixed(1);
+  $('#quota-progress').style.width= pct + '%';
+  $('#label-month').textContent   = fmtMonth(state.year,state.month);
+  $('#sum-month-hours').textContent= sumH.toFixed(2) + ' ชม.';
+  $('#sum-month-money').textContent= thb(sumM);
+
+  var list=$('#quick-list'); list.innerHTML='';
+  for (i=0;i<rows.length;i++){
+    var r=rows[i];
+    var el=document.createElement('div'); el.className='item';
+    el.innerHTML =
+      '<div><b>'+r.date+'</b><div class="muted">1×:'+r.h1+'  1.5×:'+r.h15+'  2×:'+r.h2+'  3×:'+r.h3+'</div></div>'+
+      '<div><span class="pill">'+r.hours.toFixed(2)+' ชม.</span><span class="pill money">'+thb(r.money)+'</span></div>';
     list.appendChild(el);
-  });
+  }
 
   renderDailyChart(state.year,state.month);
   renderCalendarSummary(state.year,state.month);
 }
 
-// ===== Daily Chart (fixed height & destroy) =====
 function renderDailyChart(year,month){
-  const {entries}=db.load();
-  const days=new Date(year,month,0).getDate();
-  const data=Array(days).fill(0);
-  for(const [date,v] of Object.entries(entries)){
-    const [y,m,d]=date.split('-').map(Number);
-    if(y===year && m===month){
-      const rate=+v.rate||+db.load().defRate||0;
-      data[d-1]+= (+v.h1||0)*rate + (+v.h15||0)*rate*1.5 + (+v.h2||0)*rate*2 + (+v.h3||0)*rate*3;
+  var data=dbLoad();
+  var days=new Date(year,month,0).getDate();
+  var money=new Array(days);
+  var i; for (i=0;i<days;i++){ money[i]=0; }
+
+  for (var date in data.entries){
+    var sp=date.split('-'); var y=+sp[0], m=+sp[1], d=+sp[2];
+    if (y===year && m===month){
+      var v=data.entries[date]; var rate=+v.rate||+data.defRate||0;
+      money[d-1]+= (+v.h1||0)*rate + (+v.h15||0)*rate*1.5 + (+v.h2||0)*rate*2 + (+v.h3||0)*rate*3;
     }
   }
-  if(dailyChart){ dailyChart.destroy(); dailyChart=null; }
-  const c=document.getElementById('dailyChart'); if(!c) return;
-  const ctx=c.getContext('2d');
-  const maxValue=Math.max(...data);
-  dailyChart=new Chart(ctx,{
+
+  if (dailyChart){ dailyChart.destroy(); dailyChart=null; }
+  var c=document.getElementById('dailyChart'); if(!c) return;
+  var ctx=c.getContext('2d');
+
+  var maxValue=0; for (i=0;i<money.length;i++){ if(money[i]>maxValue) maxValue=money[i]; }
+
+  new Chart(ctx,{
     type:'bar',
-    data:{ labels:data.map((_,i)=>(i+1).toString()),
-      datasets:[{ label:'ยอดเงินรายวัน (บาท)', data,
-        backgroundColor:data.map(v=>v===maxValue?'rgba(255,215,0,0.9)':'rgba(68,91,212,0.8)'),
-        borderColor:'rgba(255,255,255,0.85)', borderWidth:1, borderRadius:4 }]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'#fff' }},
-        tooltip:{ backgroundColor:'rgba(30,30,30,0.85)',
-          callbacks:{ label:ctx=>'฿'+Number(ctx.raw).toLocaleString('th-TH',{minimumFractionDigits:2}) }}},
-      scales:{
-        x:{ ticks:{ color:'#fff', font:{ size:10 }}, grid:{ color:'rgba(255,255,255,0.05)'}},
-        y:{ beginAtZero:true, ticks:{ color:'#fff', callback:v=>'฿'+v.toLocaleString(), stepSize:Math.ceil(maxValue/5)||500 },
-            grid:{ color:'rgba(255,255,255,0.1)'}, suggestedMax:maxValue>0?maxValue*1.2:1000 }
-      },
-      animation:{ duration:500, easing:'easeOutQuart' }
-    }
-  });
-}
-
-// ===== Calendar Summary (date bottom-left, hours center big) =====
-function renderCalendarSummary(year,month){
-  const {entries}=db.load();
-  const days=new Date(year,month,0).getDate();
-  const firstDay=new Date(year,month-1,1).getDay(); // 0 = Sun
-  const daily=Array(days).fill(0);
-  for(const [date,v] of Object.entries(entries)){
-    const [y,m,d]=date.split('-').map(Number);
-    if(y===year && m===month){ daily[d-1]=(+v.h1||0)+(+v.h15||0)+(+v.h2||0)+(+v.h3||0); }
-  }
-  const wrap=document.getElementById('calendar-summary');
-  wrap.innerHTML='';
-  for(let i=0;i<firstDay;i++){ const e=document.createElement('div'); e.className='day-cell off'; wrap.appendChild(e); }
-  daily.forEach((h,i)=>{
-    let cls='none'; if(h>0&&h<=2) cls='low'; else if(h>2&&h<=4) cls='mid'; else if(h>4) cls='high';
-    const el=document.createElement('div'); el.className=`day-cell ${cls}`;
-    el.innerHTML=`<div class="day-hour">${h>0?h.toFixed(1):'-'}</div><div class="day-number">${i+1}</div>`;
-    wrap.appendChild(el);
-  });
-}
-
-// ===== Yearly Report =====
-function renderYearSummary(y){
-  const {entries}=db.load();
-  let hours=0,money=0;
-  for(const [date,v] of Object.entries(entries)){
-    const [yr]=date.split('-').map(Number);
-    if(yr===y){
-      const rate=+v.rate||+db.load().defRate||0;
-      const h1=+v.h1||0,h15=+v.h15||0,h2=+v.h2||0,h3=+v.h3||0;
-      hours+=h1+h15+h2+h3;
-      money+=h1*rate+h15*rate*1.5+h2*rate*2+h3*rate*3;
-    }
-  }
-  $('#sum-year-hours').textContent=hours.toFixed(2)+' ชม.';
-  $('#sum-year-money').textContent=thb(money);
-}
-function renderMonthlyChart(y){
-  const {entries}=db.load(); const monthly=Array(12).fill(0);
-  for(const [date,v] of Object.entries(entries)){
-    const [yr,m]=date.split('-').map(Number);
-    if(yr===y){
-      const rate=+v.rate||+db.load().defRate||0;
-      monthly[m-1]+= (+v.h1||0)*rate + (+v.h15||0)*rate*1.5 + (+v.h2||0)*rate*2 + (+v.h3||0)*rate*3;
-    }
-  }
-  if(monthlyChart){ monthlyChart.destroy(); monthlyChart=null; }
-  const c=document.getElementById('monthlyChart'); if(!c) return;
-  monthlyChart=new Chart(c.getContext('2d'),{
-    type:'bar',
-    data:{ labels:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
-      datasets:[{ label:'ยอดรวมรายเดือน (บาท)', data:monthly, backgroundColor:'rgba(255,206,86,.7)', borderColor:'rgba(255,255,255,.85)', borderWidth:1 }]},
-    options:{ responsive:true, plugins:{ legend:{ labels:{ color:'#fff' }}, tooltip:{ callbacks:{ label:c=>'฿'+c.formattedValue }}},
-      scales:{ x:{ ticks:{ color:'#fff' }, grid:{ color:'#444' }}, y:{ ticks:{ color:'#fff' }, grid:{ color:'#333' }}}}
-  });
-}
-function initYearDropdown(){
-  const {entries}=db.load();
-  const years=new Set(Object.keys(entries).map(d=>parseInt(d.split('-')[0])));
-  const cur=new Date().getFullYear(); if(!years.has(cur)) years.add(cur);
-  const sel=$('#year-select'); if(!sel) return; sel.innerHTML='';
-  [...years].sort().forEach(y=>{ const o=document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o); });
-  sel.value=cur;
-  const refresh=()=>{ const y=parseInt(sel.value); renderYearSummary(y); renderMonthlyChart(y); };
-  sel.onchange=refresh; refresh();
-}
-
-// ===== Record =====
-$('#btn-save')?.addEventListener('click',()=>{
-  const date=$('#in-date').value||ymd(new Date());
-  const rate=parseFloat($('#in-rate').value||'0')||0;
-  const h1=+$('#h1').value||0, h15=+$('#h15').value||0, h2=+$('#h2').value||0, h3=+$('#h3').value||0;
-  if(rate<=0){ alert('⚠️ กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า'); return; }
-  if(!confirm(`ยืนยันบันทึก OT วันที่ ${date}\n1×:${h1} 1.5×:${h15} 2×:${h2} 3×:${h3}`)) return;
-  db.upsert(date,{rate,h1,h15,h2,h3});
-  alert('✅ บันทึกสำเร็จ!');
-  $('#h1').value=0; $('#h15').value=0; $('#h2').value=0; $('#h3').value=0; $('#in-date').value='';
-  renderDashboard();
-});
-$('#btn-delete')?.addEventListener('click',()=>{
-  const date=$('#in-date').value; if(!date) return alert('เลือกวันที่ก่อนลบ');
-  if(confirm('ต้องการลบข้อมูลวันที่ '+date+' ?')){ db.remove(date); renderDashboard(); }
-});
-
-// ===== Settings =====
-$('#btn-salary-calc')?.addEventListener('click',()=>{
-  const s=parseFloat($('#salary').value||'0'); if(!s) return alert('กรุณากรอกเงินเดือน');
-  const rate=(s/210).toFixed(2); $('#salary-result').textContent='อัตราต่อชั่วโมง = '+rate+' บาท/ชม.'; $('#default-rate').value=rate;
-});
-$('#btn-save-rate')?.addEventListener('click',()=>{
-  const r=parseFloat($('#default-rate').value||'0'); const d=db.load(); d.defRate=r; db.save(d); alert('บันทึกค่าเริ่มต้นเรียบร้อย');
-});
-$('#btn-change-pin')?.addEventListener('click',()=>{
-  const oldp=$('#old-pin').value.trim(), newp=$('#new-pin').value.trim();
-  const cur=localStorage.getItem('ot_pin')||'000000';
-  if(oldp!==cur) return alert('PIN ปัจจุบันไม่ถูกต้อง');
-  if(newp.length!==6) return alert('PIN ใหม่ต้องมี 6 หลัก');
-  localStorage.setItem('ot_pin',newp); alert('เปลี่ยนรหัสเรียบร้อย');
-});
-$('#btn-reset-pin')?.addEventListener('click',()=>{
-  if(confirm('รีเซ็ต PIN เป็น 000000 ?')){ localStorage.setItem('ot_pin','000000'); alert('รีเซ็ตเรียบร้อย'); }
-});
-$('#btn-logout')?.addEventListener('click',()=>{
-  if(confirm('ออกจากระบบ?')){ localStorage.removeItem(AUTH_KEY); location.href='login.html'; }
-});
-$('#btn-export')?.addEventListener('click',()=>{
-  const blob=new Blob([JSON.stringify(db.load(),null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='EGAT_OT_Backup.json'; a.click();
-});
-$('#btn-import')?.addEventListener('click',()=>{
-  const f=$('#import-file').files[0]; if(!f) return alert('กรุณาเลือกไฟล์');
-  const r=new FileReader(); r.onload=e=>{ try{ db.save(JSON.parse(e.target.result)); alert('นำเข้าข้อมูลเรียบร้อย'); renderDashboard(); }catch{ alert('ไฟล์ไม่ถูกต้อง'); } };
-  r.readAsText(f);
-});
-$('#btn-update-app')?.addEventListener('click',()=>{
-  if(confirm('ล้าง Cache และโหลดใหม่?')){ caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))); location.reload(true); }
-});
-
-// ===== Navigation =====
-$('#btn-month-prev')?.addEventListener('click',()=>{ state.month--; if(state.month<1){ state.month=12; state.year--; } renderDashboard(); });
-$('#btn-month-next')?.addEventListener('click',()=>{ state.month++; if(state.month>12){ state.month=1; state.year++; } renderDashboard(); });
-
-function initUI(){
-  const rateInput=$('#in-rate'); const data=db.load();
-  if(rateInput){ rateInput.readOnly=true; if(data.defRate>0) rateInput.value=data.defRate.toFixed(2); else rateInput.placeholder='กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า'; }
-  const tabs=document.querySelectorAll('.tab'); const secs=document.querySelectorAll('section');
-  tabs.forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      tabs.forEach(t=>t.classList.remove('active')); tab.classList.add('active');
-      secs.forEach(s=>s.classList.remove('active')); const target=$('#view-'+tab.dataset.view); if(target) target.classList.add('active');
-      if(tab.dataset.view==='dashboard') renderDashboard();
-      if(tab.dataset.view==='report') initYearDropdown();
-    });
-  });
-  renderDashboard();
-}
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initUI); else initUI();
-
-  load() {
-    try {
-      return JSON.parse(localStorage.getItem(KEY)) || { entries: {}, defRate: 0 };
-    } catch {
-      return { entries: {}, defRate: 0 };
-    }
-  },
-  save(d) { localStorage.setItem(KEY, JSON.stringify(d)); },
-  upsert(date, entry) { const d = db.load(); d.entries[date] = entry; db.save(d); },
-  remove(date) { const d = db.load(); delete d.entries[date]; db.save(d); }
-};
-
-// ===== Utility =====
-const $ = s => document.querySelector(s);
-const pad = n => String(n).padStart(2, '0');
-const ymd = d => [d.getFullYear(), pad(d.getMonth() + 1), pad(d.getDate())].join('-');
-const thb = n => '฿' + (n || 0).toFixed(2);
-const fmtMonth = (y, m) => new Date(y, m - 1, 1).toLocaleDateString('th-TH', { year: 'numeric', month: 'long' });
-
-// ===== Global State =====
-let state = { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
-let dailyChart, monthlyChart;
-
-// ===== Dashboard =====
-function renderDashboard() {
-  const { entries } = db.load();
-  const rows = Object.entries(entries)
-    .filter(([d]) => d.startsWith(`${state.year}-${pad(state.month)}`))
-    .map(([date, v]) => {
-      const rate = +v.rate || +db.load().defRate || 0;
-      const h1 = +v.h1 || 0, h15 = +v.h15 || 0, h2 = +v.h2 || 0, h3 = +v.h3 || 0;
-      const hours = h1 + h15 + h2 + h3;
-      const money = h1 * rate + h15 * rate * 1.5 + h2 * rate * 2 + h3 * rate * 3;
-      return { date, h1, h15, h2, h3, hours, money };
-    });
-
-  const sumHours = rows.reduce((s, r) => s + r.hours, 0);
-  const sumMoney = rows.reduce((s, r) => s + r.money, 0);
-  $('#label-month').textContent = fmtMonth(state.year, state.month);
-  $('#sum-month-hours').textContent = sumHours.toFixed(2) + ' ชม.';
-  $('#sum-month-money').textContent = thb(sumMoney);
-
-  const list = $('#quick-list');
-  list.innerHTML = '';
-  rows.forEach(r => {
-    const el = document.createElement('div');
-    el.className = 'item';
-    el.innerHTML = `<div><b>${r.date}</b>
-      <div class="muted">1×:${r.h1} 1.5×:${r.h15} 2×:${r.h2} 3×:${r.h3}</div></div>
-      <div><span class="pill">${r.hours.toFixed(2)} ชม.</span>
-      <span class="pill money">${thb(r.money)}</span></div>`;
-    list.appendChild(el);
-  });
-
-  renderDailyChart(state.year, state.month);
-  renderCalendarSummary(state.year, state.month);
-}
-
-// ===== กราฟรายวัน (ใหม่: ปรับสัดส่วนอัตโนมัติ) =====
-// ===== กราฟรายวัน (เวอร์ชันแก้ Canvas สูงไม่หยุด) =====
-let dailyChart;
-function renderDailyChart(year, month) {
-  const { entries } = db.load();
-  const days = new Date(year, month, 0).getDate();
-  const data = Array(days).fill(0);
-
-  // รวมยอดเงินแต่ละวัน
-  for (const [date, v] of Object.entries(entries)) {
-    const [y, m, d] = date.split('-').map(Number);
-    if (y === year && m === month) {
-      const rate = +v.rate || +db.load().defRate || 0;
-      const money =
-        (+v.h1 || 0) * rate +
-        (+v.h15 || 0) * rate * 1.5 +
-        (+v.h2 || 0) * rate * 2 +
-        (+v.h3 || 0) * rate * 3;
-      data[d - 1] += money;
-    }
-  }
-
-  // ป้องกันกราฟซ้อน
-  if (dailyChart) {
-    dailyChart.destroy();
-    dailyChart = null;
-  }
-
-  const ctx = document.getElementById('dailyChart')?.getContext('2d');
-  if (!ctx) return; // ไม่มี canvas ให้ข้ามเลย
-
-  const maxValue = Math.max(...data);
-  dailyChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: data.map((_, i) => (i + 1).toString()),
-      datasets: [
-        {
-          //label: 'ยอดเงินรายวัน (บาท)',
-          data: data,
-          backgroundColor: data.map(
-            v => (v === maxValue ? 'rgba(255,215,0,0.9)' : 'rgba(68,91,212,0.8)')
-          ),
-          borderColor: 'rgba(255,255,255,0.8)',
-          borderWidth: 1,
-          borderRadius: 4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: '#fff' } },
-        tooltip: {
-          backgroundColor: 'rgba(30,30,30,0.85)',
-          callbacks: {
-            label: ctx =>
-              `฿${Number(ctx.raw).toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: '#fff', font: { size: 10 } },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-        },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            color: '#fff',
-            callback: v => '฿' + v.toLocaleString(),
-            stepSize: Math.ceil(maxValue / 5) || 500,
-          },
-          grid: { color: 'rgba(255,255,255,0.1)' },
-          suggestedMax: maxValue > 0 ? maxValue * 1.2 : 1000,
-        },
-      },
-      animation: { duration: 600, easing: 'easeOutQuart' },
-    },
-  });
-}
-
-// ===== ตารางสรุปรายวัน =====
-function renderCalendarSummary(year, month) {
-  const { entries } = db.load();
-  const days = new Date(year, month, 0).getDate();
-  const firstDay = new Date(year, month - 1, 1).getDay(); // เริ่มวันอาทิตย์
-  const daily = Array(days).fill(0);
-
-  for (const [date, v] of Object.entries(entries)) {
-    const [y, m, d] = date.split('-').map(Number);
-    if (y === year && m === month)
-      daily[d - 1] = (+v.h1 || 0) + (+v.h15 || 0) + (+v.h2 || 0) + (+v.h3 || 0);
-  }
-
-  const wrap = $('#calendar-summary');
-  wrap.innerHTML = '';
-  for (let i = 0; i < firstDay; i++) {
-    const e = document.createElement('div');
-    e.className = 'day-cell off';
-    wrap.appendChild(e);
-  }
-
- daily.forEach((h, i) => {
-  let cls = 'none';
-  if (h > 0 && h <= 2) cls = 'low';
-  else if (h > 2 && h <= 4) cls = 'mid';
-  else if (h > 4) cls = 'high';
-
-  const el = document.createElement('div');
-  el.className = `day-cell ${cls}`;
-  el.innerHTML = `
-    <div class="day-hour">${h > 0 ? h.toFixed(1) : '-'}</div>
-    <div class="day-number">${i + 1}</div>
-  `;
-  wrap.appendChild(el);
-});
-
-}
-
-// ===== รายงานรายปี =====
-function renderYearSummary(ySelected) {
-  const { entries } = db.load();
-  let totalHours = 0, totalMoney = 0;
-
-  for (const [date, v] of Object.entries(entries)) {
-    const [y] = date.split('-').map(Number);
-    if (y === ySelected) {
-      const rate = +v.rate || +db.load().defRate || 0;
-      const h1 = +v.h1 || 0, h15 = +v.h15 || 0, h2 = +v.h2 || 0, h3 = +v.h3 || 0;
-      totalHours += h1 + h15 + h2 + h3;
-      totalMoney += h1 * rate + h15 * rate * 1.5 + h2 * rate * 2 + h3 * rate * 3;
-    }
-  }
-
-  $('#sum-year-hours').textContent = totalHours.toFixed(2) + ' ชม.';
-  $('#sum-year-money').textContent = thb(totalMoney);
-}
-
-function renderMonthlyChart(ySelected) {
-  const { entries } = db.load();
-  const monthly = Array(12).fill(0);
-
-  for (const [date, v] of Object.entries(entries)) {
-    const [y, m] = date.split('-').map(Number);
-    if (y === ySelected) {
-      const rate = +v.rate || +db.load().defRate || 0;
-      const money = (+v.h1 || 0) * rate + (+v.h15 || 0) * rate * 1.5 +
-                    (+v.h2 || 0) * rate * 2 + (+v.h3 || 0) * rate * 3;
-      monthly[m - 1] += money;
-    }
-  }
-
-  const ctx = document.getElementById('monthlyChart').getContext('2d');
-  if (monthlyChart) monthlyChart.destroy();
-  monthlyChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
-      datasets: [{
-        label: 'ยอดรวมรายเดือน (บาท)',
-        data: monthly,
-        backgroundColor: 'rgba(255,206,86,.7)',
-        borderColor: 'rgba(255,255,255,.8)',
-        borderWidth: 1
+    data:{
+      labels: money.map(function(_,i){return String(i+1);}),
+      datasets:[{
+        data:money,
+        backgroundColor: money.map(function(v){ return v===maxValue?'rgba(255,215,0,0.9)':'rgba(68,91,212,0.8)'; }),
+        borderColor:'rgba(255,255,255,0.85)', borderWidth:1, borderRadius:4
       }]
     },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { color: '#fff' } },
-        tooltip: { callbacks: { label: c => '฿' + c.formattedValue } }
-      },
-      scales: {
-        x: { ticks: { color: '#fff' }, grid: { color: '#444' } },
-        y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return '฿'+Number(c.raw).toLocaleString('th-TH',{minimumFractionDigits:2}); } } } },
+      scales:{
+        x:{ ticks:{color:'#fff', font:{size:10}}, grid:{color:'rgba(255,255,255,0.05)'} },
+        y:{ beginAtZero:true, ticks:{ color:'#fff', callback:function(v){ return '฿'+v.toLocaleString('th-TH'); }, stepSize:Math.ceil((maxValue||1)/5)||500 }, grid:{ color:'rgba(255,255,255,0.1)' }, suggestedMax: maxValue>0?maxValue*1.2:1000 }
       }
     }
   });
 }
 
-function initYearDropdown() {
-  const { entries } = db.load();
-  const years = new Set(Object.keys(entries).map(d => parseInt(d.split('-')[0])));
-  const cur = new Date().getFullYear();
-  if (!years.has(cur)) years.add(cur);
-  const select = $('#year-select');
-  if (!select) return;
-  select.innerHTML = '';
-  [...years].sort().forEach(y => {
-    const o = document.createElement('option');
-    o.value = y;
-    o.textContent = y;
-    select.appendChild(o);
-  });
-  select.value = cur;
-  const refresh = () => {
-    const y = parseInt(select.value);
-    renderYearSummary(y);
-    renderMonthlyChart(y);
-  };
-  select.onchange = refresh;
-  refresh();
+function renderCalendarSummary(year,month){
+  var data=dbLoad();
+  var days=new Date(year,month,0).getDate();
+  var firstDay=new Date(year,month-1,1).getDay();
+  var daily=new Array(days);
+  var i; for (i=0;i<days;i++){ daily[i]=0; }
+
+  for (var date in data.entries){
+    var sp=date.split('-'); var y=+sp[0], m=+sp[1], d=+sp[2];
+    if (y===year && m===month){
+      daily[d-1] = (+data.entries[date].h1||0) + (+data.entries[date].h15||0) + (+data.entries[date].h2||0) + (+data.entries[date].h3||0);
+    }
+  }
+
+  var wrap=document.getElementById('calendar-summary'); wrap.innerHTML='';
+  for (i=0;i<firstDay;i++){ var e=document.createElement('div'); e.className='day-cell off'; wrap.appendChild(e); }
+
+  for (i=0;i<daily.length;i++){
+    var h=daily[i], cls='none';
+    if (h>0 && h<=2) cls='low';
+    else if (h>2 && h<=4) cls='mid';
+    else if (h>4) cls='high';
+    var el=document.createElement('div'); el.className='day-cell '+cls;
+    el.innerHTML='<div class="day-hour">'+(h>0?h.toFixed(1):'-')+'</div><div class="day-number">'+(i+1)+'</div>';
+    wrap.appendChild(el);
+  }
 }
 
-// ===== Record =====
-$('#btn-save')?.addEventListener('click', () => {
-  const date = $('#in-date').value || ymd(new Date());
-  const rate = parseFloat($('#in-rate').value || '0') || 0;
-  const h1 = +$('#h1').value || 0, h15 = +$('#h15').value || 0, h2 = +$('#h2').value || 0, h3 = +$('#h3').value || 0;
-  if (rate <= 0) return alert('⚠️ กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า');
+// ===== Inputs / Settings =====
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, false);
 
-  const msg = `ยืนยันบันทึก OT วันที่ ${date}\n1×:${h1}  1.5×:${h15}  2×:${h2}  3×:${h3}`;
-  if (!confirm(msg)) return;
-  db.upsert(date, { rate, h1, h15, h2, h3 });
-  alert('✅ บันทึกสำเร็จ!');
-  $('#h1').value = 0; $('#h15').value = 0; $('#h2').value = 0; $('#h3').value = 0; $('#in-date').value = '';
-  renderDashboard();
-});
+function refreshQuotaField(){
+  var inDate=document.getElementById('in-date');
+  var date=(inDate && inDate.value) ? inDate.value : ymd(new Date());
+  var sp=date.split('-'); var y=+sp[0], m=+sp[1];
+  var key=monthKeyOf(y,m); var d=dbLoad();
+  var explicit=d.quotas[key];
+  var el=document.getElementById('month-quota');
+  if (el) el.value=(explicit && explicit>0) ? explicit : '';
+}
+var elDate=document.getElementById('in-date'); if (elDate){ elDate.addEventListener('change', refreshQuotaField); }
 
-$('#btn-delete')?.addEventListener('click', () => {
-  const date = $('#in-date').value;
-  if (!date) return alert('เลือกวันที่ก่อนลบ');
-  if (confirm('ต้องการลบข้อมูลวันที่ ' + date + ' ?')) { db.remove(date); renderDashboard(); }
-});
-
-// ===== Settings =====
-$('#btn-salary-calc')?.addEventListener('click', () => {
-  const s = parseFloat($('#salary').value || '0');
-  if (!s) return alert('กรุณากรอกเงินเดือน');
-  const rate = (s / 210).toFixed(2);
-  $('#salary-result').textContent = 'อัตราต่อชั่วโมง = ' + rate + ' บาท/ชม.';
-  $('#default-rate').value = rate;
-});
-$('#btn-save-rate')?.addEventListener('click', () => {
-  const r = parseFloat($('#default-rate').value || '0');
-  const d = db.load(); d.defRate = r; db.save(d);
-  alert('บันทึกค่าเริ่มต้นเรียบร้อย');
-});
-$('#btn-change-pin')?.addEventListener('click', () => {
-  const oldp = $('#old-pin').value.trim(), newp = $('#new-pin').value.trim();
-  const cur = localStorage.getItem('ot_pin') || '000000';
-  if (oldp !== cur) return alert('PIN ปัจจุบันไม่ถูกต้อง');
-  if (newp.length !== 6) return alert('PIN ใหม่ต้องมี 6 หลัก');
-  localStorage.setItem('ot_pin', newp);
-  alert('เปลี่ยนรหัสเรียบร้อย');
-});
-$('#btn-reset-pin')?.addEventListener('click', () => {
-  if (confirm('รีเซ็ต PIN เป็น 000000 ?')) {
-    localStorage.setItem('ot_pin', '000000');
-    alert('รีเซ็ตเรียบร้อย');
-  }
-});
-$('#btn-logout')?.addEventListener('click', () => {
-  if (confirm('ออกจากระบบ?')) {
-    localStorage.removeItem(AUTH_KEY);
-    location.href = 'login.html';
-  }
-});
-$('#btn-export')?.addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(db.load(), null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'EGAT_OT_Backup.json';
-  a.click();
-});
-$('#btn-import')?.addEventListener('click', () => {
-  const f = $('#import-file').files[0];
-  if (!f) return alert('กรุณาเลือกไฟล์');
-  const r = new FileReader();
-  r.onload = e => {
-    try {
-      db.save(JSON.parse(e.target.result));
-      alert('นำเข้าข้อมูลเรียบร้อย');
-      renderDashboard();
-    } catch { alert('ไฟล์ไม่ถูกต้อง'); }
-  };
-  r.readAsText(f);
-});
-$('#btn-update-app')?.addEventListener('click', () => {
-  if (confirm('ล้าง Cache และโหลดใหม่?')) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-    location.reload(true);
-  }
-});
-
-// ===== Month Navigation =====
-$('#btn-month-prev')?.addEventListener('click', () => {
-  state.month--;
-  if (state.month < 1) { state.month = 12; state.year--; }
-  renderDashboard();
-});
-$('#btn-month-next')?.addEventListener('click', () => {
-  state.month++;
-  if (state.month > 12) { state.month = 1; state.year++; }
-  renderDashboard();
-});
-
-// ===== Tabs =====
-function initUI() {
-  const rateInput = $('#in-rate');
-  const data = db.load();
-  if (rateInput) {
-    rateInput.readOnly = true;
-    if (data.defRate > 0) rateInput.value = data.defRate.toFixed(2);
-    else rateInput.placeholder = 'กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า';
-  }
-
-  const tabs = document.querySelectorAll('.tab');
-  const sections = document.querySelectorAll('section');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      sections.forEach(s => s.classList.remove('active'));
-      const target = $('#view-' + tab.dataset.view);
-      if (target) target.classList.add('active');
-      if (tab.dataset.view === 'dashboard') renderDashboard();
-      if (tab.dataset.view === 'report') initYearDropdown();
-    });
+var elQuota=document.getElementById('month-quota');
+if (elQuota){
+  elQuota.addEventListener('change', function(){
+    var date=(document.getElementById('in-date').value || ymd(new Date()));
+    var sp=date.split('-'); var y=+sp[0], m=+sp[1];
+    var v=parseFloat(document.getElementById('month-quota').value || '0');
+    var key=monthKeyOf(y,m);
+    if (v>0) dbSetQuota(key,v);
+    else { var d=dbLoad(); delete d.quotas[key]; dbSave(d); }
+    renderDashboard();
   });
-
-  renderDashboard();
 }
 
-if (document.readyState === 'loading')
-  document.addEventListener('DOMContentLoaded', initUI);
+function clearInputsToToday(){
+  var ids=['h1','h15','h2','h3']; var i;
+  for (i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e) e.value=0; }
+  var d=document.getElementById('in-date'); if (d) d.value=ymd(new Date());
+  refreshQuotaField();
+}
+var btnClear=document.getElementById('btn-clear'); if (btnClear) btnClear.addEventListener('click', clearInputsToToday);
+
+var btnSave=document.getElementById('btn-save');
+if (btnSave){
+  btnSave.addEventListener('click', function(){
+    var date=document.getElementById('in-date').value || ymd(new Date());
+    var rate=parseFloat(document.getElementById('in-rate').value || '0') || 0;
+    var h1=+document.getElementById('h1').value || 0;
+    var h15=+document.getElementById('h15').value || 0;
+    var h2=+document.getElementById('h2').value || 0;
+    var h3=+document.getElementById('h3').value || 0;
+
+    if (rate<=0){ alert('⚠️ กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า'); return; }
+
+    var sp=date.split('-'); var y=+sp[0], m=+sp[1]; var key=monthKeyOf(y,m);
+    var quota=dbGetQuota(key); var data=dbLoad(); var monthHours=0; var dkey;
+    for (dkey in data.entries){
+      if (dkey.indexOf(key)===0){
+        var vv=data.entries[dkey];
+        monthHours+=(+vv.h1||0)+(+vv.h15||0)+(+vv.h2||0)+(+vv.h3||0);
+      }
+    }
+    var add=h1+h15+h2+h3;
+    var projected=monthHours+add;
+    if (quota>0 && projected>quota){
+      var ok=confirm('ชั่วโมงรวมเดือนนี้จะเป็น '+projected.toFixed(2)+' ชม. เกินโควตา '+quota.toFixed(1)+' ชม. ต้องการบันทึกต่อหรือไม่?');
+      if (!ok) return;
+    }
+    var ok2=confirm('ยืนยันบันทึก OT วันที่ '+date+'\\n1×:'+h1+' 1.5×:'+h15+' 2×:'+h2+' 3×:'+h3);
+    if (!ok2) return;
+
+    dbUpsert(date,{rate:rate,h1:h1,h15:h15,h2:h2,h3:h3});
+    alert('✅ บันทึกสำเร็จ!');
+    if (dbGetSettings().autoReset) clearInputsToToday();
+    renderDashboard();
+  });
+}
+
+var btnDel=document.getElementById('btn-delete');
+if (btnDel){
+  btnDel.addEventListener('click', function(){
+    var date=document.getElementById('in-date').value;
+    if (!date){ alert('เลือกวันที่ก่อนลบ'); return; }
+    if (confirm('ต้องการลบข้อมูลวันที่ '+date+' ?')){ dbRemove(date); renderDashboard(); }
+  });
+}
+
+// ===== Navbar: Safari/PC safe =====
+function activateTabFromEvent(e){
+  if (e.type!=='click') e.preventDefault();
+  var t=e.target; while (t && !t.classList.contains('tab')) t=t.parentNode;
+  if (!t) return;
+
+  var tabs=document.querySelectorAll('#footer-tabs .tab'); var i;
+  for (i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
+  t.classList.add('active');
+
+  var secs=document.querySelectorAll('section'); var j;
+  for (j=0;j<secs.length;j++) secs[j].classList.remove('active');
+
+  var view=t.getAttribute('data-view');
+  var target=document.getElementById('view-'+view);
+  if (target) target.classList.add('active');
+
+  if (view==='dashboard') renderDashboard();
+  if (view==='report'){ var yr=new Date().getFullYear(); renderMonthlyChart(yr); renderYearSummary(yr); }
+  if (view==='record') refreshQuotaField();
+}
+var footer=document.getElementById('footer-tabs');
+if (footer){
+  footer.addEventListener('pointerup', activateTabFromEvent, {passive:false});
+  footer.addEventListener('touchend', activateTabFromEvent, {passive:false});
+  footer.addEventListener('click',     activateTabFromEvent, {passive:false});
+}
+
+// ===== Year aggregates =====
+function renderYearSummary(y){
+  var data=dbLoad(); var hours=0, money=0;
+  for (var date in data.entries){
+    var yr=+date.split('-')[0];
+    if (yr===y){
+      var v=data.entries[date];
+      var rate=+v.rate||+data.defRate||0;
+      var h1=+v.h1||0, h15=+v.h15||0, h2=+v.h2||0, h3=+v.h3||0;
+      hours += h1+h15+h2+h3;
+      money += h1*rate + h15*rate*1.5 + h2*rate*2 + h3*rate*3;
+    }
+  }
+  var e1=document.getElementById('sum-year-hours'); if (e1) e1.textContent=hours.toFixed(2)+' ชม.';
+  var e2=document.getElementById('sum-year-money'); if (e2) e2.textContent=thb(money);
+}
+function renderMonthlyChart(y){
+  var data=dbLoad(); var monthly=new Array(12); var i; for (i=0;i<12;i++) monthly[i]=0;
+  for (var date in data.entries){
+    var sp=date.split('-'); var yr=+sp[0], m=+sp[1];
+    if (yr===y){
+      var v=data.entries[date]; var rate=+v.rate||+data.defRate||0;
+      monthly[m-1]+= (+v.h1||0)*rate + (+v.h15||0)*rate*1.5 + (+v.h2||0)*rate*2 + (+v.h3||0)*rate*3;
+    }
+  }
+  if (monthlyChart){ monthlyChart.destroy(); monthlyChart=null; }
+  var c=document.getElementById('monthlyChart'); if (!c) return;
+  monthlyChart = new Chart(c.getContext('2d'), {
+    type:'bar',
+    data:{ labels:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
+           datasets:[{ data:monthly, backgroundColor:'rgba(255,206,86,.7)', borderColor:'rgba(255,255,255,0.85)', borderWidth:1 }] },
+    options:{ responsive:true, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return '฿'+c.formattedValue; } } } },
+              scales:{ x:{ ticks:{color:'#fff'}, grid:{color:'#444'} }, y:{ ticks:{color:'#fff'}, grid:{color:'#333'} } } }
+  });
+}
+
+// ===== Init =====
+function initUI(){
+  var dInput=document.getElementById('in-date'); if (dInput && !dInput.value) dInput.value=ymd(new Date());
+  var data=dbLoad();
+  var rateInput=document.getElementById('in-rate');
+  if (rateInput){
+    rateInput.readOnly=true;
+    if (data.defRate>0) rateInput.value=Number(data.defRate).toFixed(2);
+    else rateInput.placeholder='กรุณาไปตั้งค่าอัตราค่าจ้างที่หน้า ตั้งค่า';
+  }
+  refreshQuotaField();
+  var s=dbGetSettings();
+  var t=document.getElementById('auto-reset-toggle');
+  var q=document.getElementById('default-monthly-quota');
+  if (t) t.checked=!!s.autoReset;
+  if (q) q.value=s.defaultMonthlyQuota||30;
+
+  renderDashboard();
+
+  if ('serviceWorker' in navigator){
+    try { navigator.serviceWorker.register('./sw.js'); } catch(e){}
+  }
+}
+if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', initUI);
 else initUI();
