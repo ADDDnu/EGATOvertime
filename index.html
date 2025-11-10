@@ -3,25 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>EGAT Overtime v18.7.0</title>
+  <title>EGAT Overtime v18.7.1</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="assets/css/style.css?v=18.7.0" />
+  <link rel="stylesheet" href="assets/css/style.css?v=18.7.1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    // บังคับให้เข้า login เสมอเมื่อเริ่ม session ใหม่
-    (function(){
-      var SESSION_KEY='ot_session_auth_v1';
-      if(sessionStorage.getItem(SESSION_KEY)!=='ok'){ location.replace('login.html?v=18.7.0'); }
-    })();
-  </script>
+  <script>(function(){var SESSION_KEY='ot_session_auth_v1'; if(sessionStorage.getItem(SESSION_KEY)!=='ok'){ location.replace('login.html?v=18.7.1'); }})();</script>
 </head>
 <body>
   <section id="view-dashboard" class="active" aria-label="แดชบอร์ด">
     <h2>แดชบอร์ด</h2>
     <div class="month-nav">
-      <button id="btn-month-prev" aria-label="เดือนก่อนหน้า">◀</button>
+      <button id="btn-month-prev" type="button" aria-label="เดือนก่อนหน้า">◀</button>
       <span id="label-month"></span>
-      <button id="btn-month-next" aria-label="เดือนถัดไป">▶</button>
+      <button id="btn-month-next" type="button" aria-label="เดือนถัดไป">▶</button>
     </div>
     <div id="quota-card" class="card quota">
       <div class="flex between">
@@ -64,9 +58,9 @@
       <label>3× <input type="number" id="h3" placeholder="ชั่วโมง" inputmode="decimal" /></label>
     </div>
     <div class="flex gap">
-      <button id="btn-save">บันทึก</button>
+      <button id="btn-save" type="button">บันทึก</button>
       <button id="btn-clear" type="button" class="ghost">เคลียร์ฟิลด์</button>
-      <button id="btn-delete" class="ghost">ลบ</button>
+      <button id="btn-delete" type="button" class="ghost">ลบ</button>
     </div>
   </section>
 
@@ -92,26 +86,26 @@
       <label>ค่าเริ่มต้นโควตา (ชั่วโมง/เดือน)
         <input id="default-monthly-quota" type="number" placeholder="เช่น 30" inputmode="decimal" />
       </label>
-      <button id="btn-save-default-quota">บันทึกค่าเริ่มต้น</button>
+      <button id="btn-save-default-quota" type="button">บันทึกค่าเริ่มต้น</button>
     </div>
     <p class="muted">* ถ้าเดือนใดไม่ได้ตั้งโควตาเฉพาะ จะใช้ค่านี้อัตโนมัติ</p>
     <h3>จัดการข้อมูล</h3>
     <div class="flex wrap gap">
-      <button id="btn-export">Export</button>
+      <button id="btn-export" type="button">Export</button>
       <input type="file" id="import-file" />
-      <button id="btn-import">Import</button>
-      <button id="btn-update-app" class="ghost">ล้าง Cache / โหลดใหม่</button>
-      <button id="btn-logout" class="danger">ออกจากระบบ</button>
+      <button id="btn-import" type="button">Import</button>
+      <button id="btn-update-app" type="button" class="ghost">ล้าง Cache / โหลดใหม่</button>
+      <button id="btn-logout" type="button" class="danger">ออกจากระบบ</button>
     </div>
   </section>
 
   <footer id="footer-tabs" role="tablist" aria-label="เมนู">
-    <button class="tab active" data-view="dashboard" role="tab" aria-selected="true">แดชบอร์ด</button>
-    <button class="tab" data-view="record" role="tab">บันทึก</button>
-    <button class="tab" data-view="report" role="tab">รายงาน</button>
-    <button class="tab" data-view="settings" role="tab">ตั้งค่า</button>
+    <button type="button" class="tab active" data-view="dashboard" role="tab" aria-selected="true">แดชบอร์ด</button>
+    <button type="button" class="tab" data-view="record" role="tab">บันทึก</button>
+    <button type="button" class="tab" data-view="report" role="tab">รายงาน</button>
+    <button type="button" class="tab" data-view="settings" role="tab">ตั้งค่า</button>
   </footer>
 
-  <script src="assets/js/app.js?v=18.7.0" defer></script>
+  <script src="assets/js/app.js?v=18.7.1" defer></script>
 </body>
 </html>
