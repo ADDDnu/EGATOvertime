@@ -1,4 +1,4 @@
-// EGAT OT — app.js (safe syntax)
+// EGAT OT — app.js (safe syntax, Safari/PC)
 var DB_KEY = 'ot_manual_v1';
 
 function dbLoad() {
@@ -11,7 +11,7 @@ function dbLoad() {
     if (typeof d.settings.autoReset === 'undefined') d.settings.autoReset = true;
     if (typeof d.settings.defaultMonthlyQuota === 'undefined') d.settings.defaultMonthlyQuota = 30;
     return d;
-  } catch(e) {
+  } catch (e) {
     return { entries:{}, defRate:0, quotas:{}, settings:{ autoReset:true, defaultMonthlyQuota:30 } };
   }
 }
@@ -21,7 +21,7 @@ function dbRemove(date){ var d=dbLoad(); delete d.entries[date]; dbSave(d); }
 function dbSetQuota(k,h){ var d=dbLoad(); d.quotas[k]=Number(h)||0; dbSave(d); }
 function dbGetQuota(k){ var d=dbLoad(); var q=d.quotas[k]; return (q && q>0) ? q : Number(d.settings.defaultMonthlyQuota||0); }
 function dbGetSettings(){ return dbLoad().settings; }
-function dbSetSettings(s){ var d=dbLoad(); for (var k in s){ d.settings[k]=s[k]; } dbSave(d); }
+function dbSetSettings(s){ var d=dbLoad(); for (var k in s) d.settings[k]=s[k]; dbSave(d); }
 
 function $(s){ return document.querySelector(s); }
 function pad(n){ return String(n).padStart(2,'0'); }
