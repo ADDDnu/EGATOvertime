@@ -1,32 +1,48 @@
-body {
-  font-family: 'Mitr', sans-serif;
-  background: #0a0f2c;
-  color: #fff;
-  margin: 0;
-  padding: 0;
-  text-align: center;
-}
-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #111;
-  display: flex;
-}
-.tab {
-  flex: 1;
-  padding: 12px;
-  cursor: pointer;
-  border-top: 3px solid transparent;
-}
-.tab.active {
-  border-color: #4af;
-}
-section {
-  display: none;
-  padding: 20px;
-}
-section.active {
-  display: block;
-}
+*{box-sizing:border-box}[hidden]{display:none !important}
+body{margin:0;font-family:'Mitr',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b1234;color:#fff}
+h2{margin:16px 12px} h3{margin:0 0 8px 0}
+section{display:none;padding:12px 12px 96px} section.active{display:block}
+.card{background:#121a48;border-radius:12px;padding:12px;margin:8px 0}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.right{text-align:right}.muted{color:#cfd3ff}.small{font-size:.9rem;opacity:.85}
+.title{font-weight:800;font-size:1.1rem}
+input,button,select{border-radius:10px;border:none;padding:10px;background:#0f1745;color:#fff}
+button{background:#3f5cff;cursor:pointer} button.ghost{background:#223070} button.danger{background:#b93737}
+footer{position:fixed;left:0;right:0;bottom:0;background:#0e143d;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:6px;padding:8px;z-index:9999}
+footer .tab{flex:1;padding:12px;border:none;border-radius:10px;background:#121a48;color:#fff;cursor:pointer}
+footer .tab.active{background:#3242a8}
+.main-header{text-align:center;font-size:1.6rem;font-weight:900;letter-spacing:.02em;color:#ffd700;margin:8px 0 4px;text-shadow:0 0 10px rgba(255,215,0,.4)}
+.login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-card{background:#121a48;border-radius:16px;padding:20px;min-width:320px;max-width:520px;width:100%}
+.login-card h1{margin:0 0 6px 0}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 12px}
+.stat-card{background:#121946;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;border:1px solid rgba(255,255,255,.06)}
+.stat-title{font-size:.95rem;color:#cfd3ff}
+.big-number{font-size:2.2rem;font-weight:900;letter-spacing:.02em}
+.quota-card{padding:12px}
+.quota-bar{width:100%;height:14px;background:#0d1440;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+.quota-bar #quotaFill{height:100%;width:0%;background:linear-gradient(90deg,#39c1ff,#2ee59d);transition:width .25s ease}
+.quota-over{background:linear-gradient(90deg,#ff6b6b,#ff9f43) !important}
+.chart-card{padding:8px 12px}
+.chart-wrap{height:140px}
+.chart-wrap canvas{width:100% !important;height:100% !important;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:12px;margin:8px 0}
+.cal-legend{display:flex;gap:12px;align-items:center;padding:0 12px;color:#cfd3ff}
+.cal-legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.cal-legend .low{background:#2e6ef7}.cal-legend .mid{background:#f7b32e}.cal-legend .high{background:#f45d5d}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:12px}
+.cal-day{position:relative;background:#121a48;border-radius:12px;min-height:72px;padding:8px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.cal-day.off{background:#0f1540;opacity:.5}
+.cal-day .date{position:absolute;top:6px;left:8px;font-size:.78rem;color:#cfd3ff}
+.cal-day .hours{font-size:1.5rem;font-weight:800;letter-spacing:.06rem}
+.cal-day.weekend{background:#CD5C5C;color:#fff}
+.cal-day.weekend .date{color:#fff}
+.record-badge{display:inline-block;font-size:1.2rem;font-weight:800;background:#0f1745;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);min-width:72px;text-align:center}
+.record-hours{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px}
+.record-hours label{display:flex;justify-content:space-between;align-items:center;background:#121a48;border-radius:12px;padding:8px 10px}
+.record-hours input{width:120px;text-align:right}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);z-index:9998}
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999}
+.modal-card{background:#121a48;border-radius:14px;padding:14px;min-width:300px;max-width:520px;width:92%}
+.modal-content{white-space:pre-line;color:#cfd3ff}

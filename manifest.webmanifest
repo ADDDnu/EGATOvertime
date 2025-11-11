@@ -1,9 +1,9 @@
 {
   "name": "EGAT Overtime",
-  "short_name": "EGAT OT",
+  "short_name": "OT",
   "start_url": "login.html",
   "display": "standalone",
-  "background_color": "#0e1535",
-  "theme_color": "#4c7aff",
+  "background_color": "#0b1234",
+  "theme_color": "#3f5cff",
   "icons": []
 }
