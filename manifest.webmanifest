@@ -1,9 +1,15 @@
 {
-  "name": "EGAT Overtime",
-  "short_name": "OT",
-  "start_url": "login.html",
+  "name": "OT Calculeter",
+  "short_name": "OT Calc",
+  "icons": [
+    {
+      "src": "logo512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#0b1234",
-  "theme_color": "#3f5cff",
-  "icons": []
+  "background_color": "#ffffff",
+  "theme_color": "#005eb8"
 }

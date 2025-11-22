@@ -1,57 +1,543 @@
-/* Base */
-body { font-family:"Prompt",sans-serif; margin:0; background:#0e1535; color:#fff; }
-h2 { margin:12px 12px 6px; }
-section { display:none; padding:12px; padding-bottom:84px; }
-section.active { display:block; }
-button { background:#4c7aff; color:#fff; border:none; border-radius:8px; padding:10px 12px; cursor:pointer; }
-input, select { width:100%; margin:6px 0; padding:10px; border-radius:8px; border:none; }
-
-/* Footer tabs */
-footer {
-  position:fixed; bottom:0; left:0; right:0;
-  background:#1a2145; display:flex; justify-content:space-around;
-  padding:8px; z-index:999;
-}
-.tab { color:#fff; padding:8px 12px; cursor:pointer; border-radius:8px; }
-.tab.active { background:#2d3b6f; }
-
-/* Lists */
-.item { display:flex; justify-content:space-between; gap:10px; background:#18214a; border-radius:10px; padding:10px; margin:6px 0; }
-.muted { color:#c9cbe8; font-size:.85em; }
-.pill { padding:4px 8px; border-radius:8px; background:#2d3b6f; margin-left:6px; }
-.pill.money { background:#4c9e46; }
-
-/* Charts — fix height */
-#dailyChart, #monthlyChart, canvas {
-  width:100% !important;
-  height:260px !important;
-  max-height:280px !important;
-  display:block;
-  box-sizing:border-box;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* Calendar summary (new layout) */
-#calendar-summary { display:flex; flex-wrap:wrap; gap:2px; justify-content:space-between; margin-top:10px; }
-.day-cell {
-  position:relative;
-  width:calc(14.28% - 2px);
-  aspect-ratio:1/1;
-  background:#1c2658;
-  border-radius:10px;
-  margin:1px;
-  display:flex; align-items:center; justify-content:center;
-  overflow:hidden; transition:background .2s;
-  font-weight:500; text-align:center;
+body {
+  margin: 0;
+  font-family: "Noto Sans Thai", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: #f3f5fb;
+  color: #222;
 }
-.day-cell.low { background:#345d9c; }
-.day-cell.mid { background:#5588cc; }
-.day-cell.high { background:#85c46c; }
-.day-cell.off { background:transparent; }
 
-/* Big hours in center, date bottom-left */
-.day-hour { font-size:1.3em; color:#fff; }
-.day-number { position:absolute; bottom:4px; left:6px; font-size:.75em; opacity:.85; }
+/* ===================== LAYOUT ===================== */
 
-/* Month nav */
-.month-nav { display:flex; align-items:center; gap:8px; margin:4px 12px 10px; }
-.month-nav button { padding:6px 10px; }
+#app {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.screen {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.screen-hidden {
+  display: none;
+}
+
+.screen-active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+/* ===================== LOGIN ===================== */
+
+.login-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px 20px 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-logo {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 8px;
+}
+
+.app-title {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #005eb8;
+}
+
+.login-box {
+  width: 100%;
+  border-radius: 16px;
+  padding: 16px 16px 10px;
+  border: 2px solid #005eb8;
+  background: #f7f9ff;
+}
+
+.login-greeting {
+  margin: 0 0 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.login-footer-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.credits {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* ===================== MAIN HEADER ===================== */
+
+.main-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.header-app-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #005eb8;
+}
+
+.header-username {
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.content {
+  padding: 10px 10px 80px;
+}
+
+/* ===================== TAB BAR ===================== */
+
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  background: #ffffff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px 4px;
+  border: none;
+  background: transparent;
+  font-size: 0.78rem;
+  color: #666;
+  cursor: pointer;
+}
+
+.tab-button-active {
+  border-top: 3px solid #005eb8;
+  color: #005eb8;
+  font-weight: 600;
+}
+
+/* ===================== PANELS & CARDS ===================== */
+
+.tab-panel {
+  display: none;
+}
+
+.tab-active {
+  display: block;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.03);
+}
+
+.card-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ===================== FIELDS & BUTTONS ===================== */
+
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  color: #555;
+}
+
+.field-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #cdd4e6;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: #005eb8;
+  box-shadow: 0 0 0 2px rgba(0, 94, 184, 0.15);
+}
+
+.btn {
+  border-radius: 999px;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #005eb8;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #e4e7f2;
+  color: #333;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #005eb8;
+  font-size: 0.8rem;
+  padding: 0;
+  cursor: pointer;
+}
+
+.btn-danger-outline {
+  background: #fff5f5;
+  border: 1px solid #e53935;
+  color: #b71c1c;
+  width: 100%;
+  margin: 4px 0 10px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* ===================== MONTH / QUOTA ===================== */
+
+.month-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.icon-button {
+  border: none;
+  background: #e6edf9;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.month-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+.quota-block {
+  font-size: 0.8rem;
+}
+
+.quota-track {
+  margin-top: 6px;
+  height: 10px;
+  border-radius: 999px;
+  background: #e1e6f5;
+  overflow: hidden;
+}
+
+.quota-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4caf50, #ffc107, #e91e63);
+  transition: width 0.3s ease;
+}
+
+/* ===================== CHARTS ===================== */
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 140px;
+  padding: 4px 0;
+}
+
+/* แกน Y สำหรับกราฟแท่ง */
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 0.65rem;
+  padding-right: 4px;
+  height: 100%;
+  min-width: 24px;
+  color: #666;
+}
+
+.y-tick {
+  line-height: 1;
+}
+
+/* ส่วนเก็บแท่งกราฟด้านขวา */
+.bar-chart-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100%;
+}
+
+.bar-wrapper {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  background: #005eb8;
+  max-height: 100%;
+  min-height: 2px; /* ให้เห็นแท่งเสมอถ้ามีชั่วโมง */
+}
+
+.bar-label {
+  margin-top: 2px;
+  font-size: 0.65rem;
+}
+
+/* ===================== CALENDAR ===================== */
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-cell {
+  position: relative;
+  min-height: 48px;
+  border-radius: 10px;
+  padding: 4px;
+  background: #f1f4ff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-cell-empty {
+  background: transparent;
+  cursor: default;
+}
+
+.calendar-date {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.calendar-hours {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.calendar-legend {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.legend-box {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 999px;
+  margin-right: 2px;
+}
+
+.legend-low {
+  background: #9fe4ff;
+}
+
+.legend-medium {
+  background: #daa520;
+}
+
+.legend-high {
+  background: #db7093;
+}
+
+.cell-low {
+  background: #e1f7ff;
+}
+
+.cell-medium {
+  background: #ffe9b3;
+}
+
+.cell-high {
+  background: #ffd1e0;
+}
+
+/* ===================== REPORT TABLE ===================== */
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.report-table th,
+.report-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e0e5f0;
+}
+
+.report-table th {
+  text-align: left;
+  background: #f1f3fb;
+}
+
+/* ===================== MODALS ===================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal {
+  max-width: 360px;
+  width: 90%;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px 16px 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.modal-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.confirm-body {
+  font-size: 0.85rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px dashed #005eb8;
+  color: #005eb8;
+  cursor: pointer;
+}
+
+.file-label input[type="file"] {
+  display: none;
+}
+
+/* ===================== MISC ===================== */
+
+@media (min-width: 481px) {
+  body {
+    display: flex;
+    justify-content: center;
+  }
+
+  #app {
+    width: 480px;
+    border-left: 1px solid #d9dfea;
+    border-right: 1px solid #d9dfea;
+  }
+}
+
+
+/* Logout button (small, top-right) */
+.btn-logout {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  white-space: nowrap;
+}

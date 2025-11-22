@@ -2,86 +2,266 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>EGAT Overtime – v18.13</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css" />
-  <script>(function(){var KEY='ot_session_auth_v1';if(sessionStorage.getItem(KEY)!=='ok'){location.replace('login.html?v=1813');}})();</script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
-  <script src="js/app.js" defer></script>
+  <title>OT Calculator</title>
+
+  <!-- ปิดการซูมหน้าเว็บ & รองรับ mobile -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+  <!-- PWA / Shortcut หน้า Home -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="512x512" href="logo512.png" />
+  <meta name="theme-color" content="#005eb8" />
+
+  <!-- ฟอนต์ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1 class="main-header">Overtime Calculator</h1>
-  <section id="view-dashboard" class="active">
-    <div class="cal-header">
-      <button id="btn-prev" type="button">◀</button>
-      <div id="label-month" class="title"></div>
-      <button id="btn-next" type="button">▶</button>
-    </div>
-    <div class="stat-row">
-      <div class="stat-card"><div class="stat-title">ชั่วโมงเดือนนี้</div><div id="hoursTotal" class="big-number">0</div></div>
-      <div class="stat-card"><div class="stat-title">เงินเดือนนี้ (บาท)</div><div id="moneyTotal" class="big-number">0</div></div>
-    </div>
-    <div class="card quota-card">
-      <div class="row" style="margin-bottom:8px"><div class="title">โควตาเดือนนี้</div>
-        <div class="muted"><span id="quotaUsed">0</span>/<span id="quotaTotal">0</span> ชม. <span id="quotaRemainWrap">(คงเหลือ <b id="quotaRemain">0</b>)</span></div>
+  <div id="app">
+
+    <!-- ===================== LOGIN SCREEN ===================== -->
+    <div id="loginScreen" class="screen screen-active">
+      <div class="login-card">
+        <img src="logo512.png" alt="OT Calculator Logo" class="login-logo" />
+        <h1 class="app-title">OT Calculator</h1>
+
+        <div class="login-box">
+          <p id="loginGreeting" class="login-greeting">สวัสดี ผู้ใช้ใหม่</p>
+
+          <label for="loginPin" class="field-label">รหัส 6 หลัก</label>
+          <input id="loginPin"
+                 class="field-input"
+                 type="password"
+                 inputmode="numeric"
+                 pattern="[0-9]*"
+                 maxlength="6"
+                 autocomplete="current-password"
+                 placeholder="••••••" />
+
+          <button id="loginButton" class="btn btn-primary">ยืนยัน</button>
+
+          <div class="login-footer-row">
+            <button id="openRegister" class="btn btn-link">สมัครใช้งาน</button>
+          </div>
+        </div>
+
+        <div class="credits">ADISORN PANYOS 592693</div>
       </div>
-      <div class="quota-bar"><div id="quotaFill"></div></div>
     </div>
-    <div class="card chart-card"><h3 style="margin:0 0 8px 0">กราฟรายวัน (สูงแบบกะทัดรัด)</h3><div class="chart-wrap"><canvas id="dailyChart"></canvas></div></div>
-    <div class="cal-legend">
-      <span class="dot low"></span> 0–5
-      <span class="dot mid" style="background:#DAA520"></span> 6–10
-      <span class="dot high" style="background:#DB7093"></span> 11–20
-      <span class="dot weekend" style="background:#CD5C5C;margin-left:12px"></span> ส-อา
+
+    <!-- ===================== MAIN APP ===================== -->
+    <div id="mainScreen" class="screen screen-hidden">
+      <!-- Header -->
+            <!-- Header -->
+      <header class="main-header">
+        <div class="header-left">
+          <img src="logo512.png" alt="Logo" class="header-logo" />
+          <div>
+            <div class="header-app-name">OT Calculator</div>
+            <div class="header-username" id="headerUsername"></div>
+          </div>
+        </div>
+        <button id="logoutButton" class="btn btn-secondary btn-logout">Logout</button>
+      </header>
+
+      <!-- Content -->
+      <main class="content">
+        <!-- ===== TAB: DASHBOARD ===== -->
+        <section id="tab-dashboard" class="tab-panel tab-active">
+          <div class="card">
+            <div class="month-switcher">
+              <button id="prevMonth" class="icon-button">&#x25C0;</button>
+              <div id="currentMonthLabel" class="month-label"></div>
+              <button id="nextMonth" class="icon-button">&#x25B6;</button>
+            </div>
+
+            <div class="summary-row">
+              <div>OT รวม: <span id="dashTotalHours">0</span> ชม.</div>
+              <div>จำนวนเงินประมาณ: <span id="dashTotalMoney">0</span> ฿</div>
+            </div>
+
+            <div class="quota-block">
+              <div class="quota-header">
+                โควต้า OT เดือนนี้:
+                <span id="quotaUsedLabel">0 / 0</span> ชม.
+              </div>
+              <div class="quota-track">
+                <div id="quotaFill" class="quota-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">ชั่วโมงต่อวัน</h3>
+            <div id="dailyBarChart" class="bar-chart"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">ปฏิทินการทำ OT</h3>
+            <div id="calendarGrid" class="calendar-grid"></div>
+            <div class="calendar-legend">
+              <span class="legend-box legend-low"></span> 0–5 ชม.
+              <span class="legend-box legend-medium"></span> 6–10 ชม.
+              <span class="legend-box legend-high"></span> 11–20 ชม.+
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TAB: RECORD (บันทึก) ===== -->
+        <section id="tab-record" class="tab-panel">
+          <div class="card">
+            <div>โควต้าเดือนนี้: &nbsp;<span id="recordQuotaTotal">0</span> ชม.</div>
+            <div>ทำไปแล้ว:    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="recordQuotaUsed">0</span> ชม.</div>
+            <div>คงเหลือ:     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="recordQuotaRemain">0</span> ชม.</div>
+          </div>
+
+          <div class="card">
+            <label for="recordDate" class="field-label">วันที่</label>
+            <input id="recordDate" type="text" class="field-input" placeholder="dd-mm-yyyy" />
+          </div>
+
+          <div class="card">
+            <label class="field-label">1 เท่า (ชม.)</label>
+            <input id="hours1x" type="number" min="0" step="0.5" class="field-input" />
+
+            <label class="field-label">1.5 เท่า (ชม.)</label>
+            <input id="hours15x" type="number" min="0" step="0.5" class="field-input" />
+
+            <label class="field-label">2 เท่า (ชม.)</label>
+            <input id="hours2x" type="number" min="0" step="0.5" class="field-input" />
+
+            <label class="field-label">3 เท่า (ชม.)</label>
+            <input id="hours3x" type="number" min="0" step="0.5" class="field-input" />
+          </div>
+
+          <div class="button-row">
+            <button id="recordClear" class="btn btn-secondary">เคลียร์ค่า</button>
+            <button id="recordSave" class="btn btn-primary">บันทึก</button>
+          </div>
+        </section>
+
+        <!-- ===== TAB: REPORT (รายงาน) ===== -->
+        <section id="tab-report" class="tab-panel">
+          <div class="card">
+            <label for="reportYearSelect" class="field-label">เลือกปี</label>
+            <select id="reportYearSelect" class="field-input"></select>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">ชั่วโมงรวมต่อเดือน</h3>
+            <div id="yearBarChart" class="bar-chart"></div>
+          </div>
+
+          <div class="card">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>เดือน</th>
+                  <th>ชั่วโมงรวม (ชม.)</th>
+                  <th>จำนวนเงิน (฿)</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== TAB: SETTINGS (ตั้งค่า) ===== -->
+        <section id="tab-settings" class="tab-panel">
+          <div class="card">
+            <label for="settingQuota" class="field-label">โควต้า OT ต่อเดือน (ชม.)</label>
+            <input id="settingQuota" type="number" min="0" step="0.5" class="field-input" />
+
+            <label for="settingBaseRate" class="field-label">ค่าแรงต่อชั่วโมง (1 เท่า) (บาท)</label>
+            <input id="settingBaseRate" type="number" min="0" step="1" class="field-input" />
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">สำรองข้อมูล</h3>
+            <button id="exportBackup" class="btn btn-secondary">Export backup</button>
+            <label class="file-label">
+              Import backup
+              <input id="importBackup" type="file" accept="application/json" />
+            </label>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">เปลี่ยนรหัสผ่าน</h3>
+            <label for="oldPassword" class="field-label">รหัสผ่านเดิม</label>
+            <input id="oldPassword" type="password" inputmode="numeric" maxlength="6" class="field-input" />
+
+            <label for="newPassword" class="field-label">รหัสผ่านใหม่</label>
+            <input id="newPassword" type="password" inputmode="numeric" maxlength="6" class="field-input" />
+
+            <label for="confirmNewPassword" class="field-label">ยืนยันรหัสผ่านใหม่</label>
+            <input id="confirmNewPassword" type="password" inputmode="numeric" maxlength="6" class="field-input" />
+
+            <div class="button-row">
+              <button id="changePasswordBtn" class="btn btn-primary">เปลี่ยนรหัสผ่าน</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Tab bar -->
+      <nav class="tab-bar">
+        <button class="tab-button tab-button-active" data-tab="dashboard">แดชบอร์ด</button>
+        <button class="tab-button" data-tab="record">บันทึก</button>
+        <button class="tab-button" data-tab="report">รายงาน</button>
+        <button class="tab-button" data-tab="settings">ตั้งค่า</button>
+      </nav>
     </div>
-    <div id="cal-grid" class="cal-grid"></div>
-  </section>
-  <section id="view-record">
-    <h2>บันทึก OT</h2>
-    <label>วันที่ <input id="in-date" type="date"></label>
-    <div class="card grid2" style="align-items:center">
-      <div><div class="muted small">โควตาเดือนนี้ (ชม.)</div><div id="rec-quota" class="record-badge">0</div></div>
-      <div class="right"><div class="muted small">ค่าแรงต่อชั่วโมง (จากตั้งค่า)</div><div id="rec-rate" class="record-badge">0</div></div>
+  </div>
+
+  <!-- ===================== REGISTER MODAL ===================== -->
+  <div id="registerOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <h2 class="modal-title">สมัครใช้งาน</h2>
+
+      <label for="regName" class="field-label">ชื่อผู้ใช้งาน</label>
+      <input id="regName" type="text" class="field-input" />
+
+      <label for="regPin" class="field-label">รหัสเริ่มใช้งาน (6 หลัก)</label>
+      <input id="regPin"
+             type="password"
+             inputmode="numeric"
+             maxlength="6"
+             class="field-input" />
+
+      <button id="clearDataButton" class="btn btn-danger-outline">ล้างข้อมูลทั้งหมด</button>
+
+      <div class="modal-actions">
+        <button id="registerCancel" class="btn btn-secondary">ยกเลิก</button>
+        <button id="registerConfirm" class="btn btn-primary">ยืนยัน</button>
+      </div>
     </div>
-    <div class="record-hours">
-      <label>ชั่วโมง 1× <input id="h1" type="number" step="0.5" value="0"></label>
-      <label>ชั่วโมง 1.5× <input id="h15" type="number" step="0.5" value="0"></label>
-      <label>ชั่วโมง 2× <input id="h2" type="number" step="0.5" value="0"></label>
-      <label>ชั่วโมง 3× <input id="h3" type="number" step="0.5" value="0"></label>
+  </div>
+
+  <!-- ===================== CONFIRM SAVE MODAL ===================== -->
+  <div id="confirmOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <h2 class="modal-title">ยืนยันการบันทึก</h2>
+      <div class="confirm-body">
+        <p>วันที่: <span id="confirmDate"></span></p>
+        <p>1 เท่า: <span id="confirm1x"></span> ชม.</p>
+        <p>1.5 เท่า: <span id="confirm15x"></span> ชม.</p>
+        <p>2 เท่า: <span id="confirm2x"></span> ชม.</p>
+        <p>3 เท่า: <span id="confirm3x"></span> ชม.</p>
+        <hr />
+        <p>รวมชั่วโมง: <span id="confirmTotalHours"></span> ชม.</p>
+        <p>จำนวนเงินประมาณ: <span id="confirmTotalMoney"></span> ฿</p>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmCancel" class="btn btn-secondary">ยกเลิก</button>
+        <button id="confirmOk" class="btn btn-primary">ยืนยัน</button>
+      </div>
     </div>
-    <div class="row">
-      <button id="btn-save" type="button">บันทึก</button>
-      <button id="btn-clear" type="button" class="ghost">เคลียร์ชั่วโมง</button>
-      <button id="btn-delete" type="button" class="danger">ลบข้อมูลวันที่นี้</button>
-    </div>
-  </section>
-  <section id="view-report">
-    <h2>รายงาน</h2>
-    <div class="row" style="margin-bottom:8px">
-      <label>เลือกปี <select id="report-year"></select></label>
-      <div><button id="btn-export-pdf" type="button">Export PDF</button></div>
-    </div>
-    <div class="stat-row" style="margin-top:4px">
-      <div class="stat-card"><div class="stat-title">ชั่วโมงรวมปีนี้</div><div id="report-hours-year" class="big-number">0</div></div>
-      <div class="stat-card"><div class="stat-title">เงินรวมปีนี้ (บาท)</div><div id="report-money-year" class="big-number">0</div></div>
-    </div>
-    <div class="card chart-card">
-      <h3 style="margin:0 0 8px 0">กราฟรายเดือน (ชั่วโมง)</h3>
-      <div class="chart-wrap"><canvas id="reportChart"></canvas></div>
-    </div>
-  </section>
-  <section id="view-settings">
-    <h2>ตั้งค่า</h2>
-    <div class="card grid2"><label>โควตาเริ่มต้นรายเดือน (ชั่วโมง)<input id="default-monthly-quota" type="number" placeholder="เช่น 30"></label><button id="btn-save-default-quota" type="button">บันทึกโควตาเริ่มต้น</button></div>
-    <div class="card grid2"><label>ค่าแรงต่อชั่วโมง (ค่าเริ่มต้น)<input id="default-hourly-rate" type="number" placeholder="เช่น 120"></label><button id="btn-save-default-rate" type="button">บันทึกค่าแรงเริ่มต้น</button></div>
-    <div class="card"><label><input id="auto-reset-toggle" type="checkbox" checked> รีเซ็ตช่องเป็น 0 และวันที่วันนี้อัตโนมัติหลังบันทึก</label></div>
-    <div class="row"><button id="btn-export" type="button">Export JSON</button><input id="import-file" type="file"><button id="btn-import" type="button">Import JSON</button><button id="btn-logout" type="button" class="danger">ออกจากระบบ</button></div>
-  </section>
-  <div id="modal-backdrop" class="modal-backdrop" hidden></div>
-  <div id="modal" class="modal" hidden><div class="modal-card"><h3>ยืนยันการบันทึก</h3><div id="modal-content" class="modal-content"></div><div class="row" style="margin-top:10px"><button id="modal-confirm" type="button">ยืนยัน</button><button id="modal-cancel" type="button" class="ghost">ยกเลิก</button></div></div></div>
-  <footer id="footer-tabs"><button class="tab active" data-view="dashboard" type="button">แดชบอร์ด</button><button class="tab" data-view="record" type="button">บันทึก</button><button class="tab" data-view="report" type="button">รายงาน</button><button class="tab" data-view="settings" type="button">ตั้งค่า</button></footer>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
